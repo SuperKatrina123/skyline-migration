@@ -79,11 +79,37 @@ app.json renderer: "skyline"
 
 详见 `plans/migration-plan.md`。
 
+## 工作流概览
+
+迁移分为 3 个步骤（详见 `guides/workflow.md` 和 `guides/testing-guide.md`）：
+
+```
+Step 1 ── 知识采集
+  ├─ 加载微信 Skyline Skills + 官方文档
+  ├─ 扫描源码 + dist/ 编译器产物确认真实实现
+  ├─ 输出 6 个知识文件
+  └─ 🔴 人工审核 → 进入 Step 2
+
+Step 2 ── 分批次迁移
+  ├─ Batch 1: 配置与 CSS 机械修复 (flexDirection/sticky/overflow/float)
+  ├─ Batch 2: 文本与样式修复 (white-space/text-overflow/overflow-wrap)
+  ├─ Batch 3: 滚动体系迁移 (window.scrollY 消除 / ScrollBoundary)
+  └─ Batch 4: fixed浮层 + 原生组件 + 分包 (📱 真机验证)
+
+Step 3 ── 验证与沉淀
+  ├─ 🟢 静态扫描 (skyline-check.js + tsc + build)
+  ├─ 🟡 开发者工具预览
+  ├─ 🔴 AB 实验双场景验证 (Skyline + WebView)
+  ├─ 📱 真机验证
+  └─ 更新 knowledge/ + migration-patterns.md
+```
+
 ## 文件结构
 
 ```
 skyline-migration/
 ├── README.md                           # 本文件
+├── CLAUDE.md                           # Claude Code 斜杠命令配置
 ├── knowledge/                          # 项目知识（AI 基于 Skyline 官方文档采集）
 │   ├── component-mapping.md            # XTaro 组件 → 原生组件映射
 │   ├── compatibility-matrix.md         # CSS/组件/JS API 兼容性矩阵
@@ -93,11 +119,12 @@ skyline-migration/
 │   └── route-guide.md                  # 自定义路由与页面转场
 ├── guides/                             # 迁移参考
 │   ├── migration-patterns.md           # 迁移模式示例库
-│   └── workflow.md                     # 工作流说明
+│   ├── workflow.md                     # 三步骤工作流
+│   └── testing-guide.md                # 三层测试指南
 ├── plans/                              # 迁移方案
 │   └── migration-plan.md               # 分阶段迁移计划（含 AB 开关、CSS 规则、多端兼容）
-└── scripts/
-    └── skyline-check.js                # Skyline 兼容性快速检查脚本
+├── scripts/
+│   └── skyline-check.js                # Skyline 兼容性快速检查脚本
 ```
 
 ## 相关技能
