@@ -24,27 +24,29 @@
 
 ## 三、分批次迁移计划
 
-| 批次 | 内容 | 风险 | 工作量 |
-|---|---|---|---|
-| **1 — 配置 + flexDirection** | | | |
-| 1a | app.json + 页面 json Skyline 必需配置 | 低 | 小 |
-| 1b | ~150 处 display:flex 加 flexDirection:'row' | 低 | 中（可脚本批量） |
-| **2 — CSS 不兼容属性 + scroll-view type** | | | |
-| 2a | 5 处 position:sticky → 替代方案 | 中 | 中 |
-| 2b | 5 处 overflow:scroll/auto → XScrollView | 中 | 中 |
-| 2c | 1 处 float → flex 布局 | 低 | 小 |
-| 2d | ~10 处 XScrollView 加 type 属性 | 低 | 小 |
-| **3 — 页面滚动体系迁移** | | | |
-| 3a | window.scrollY → scroll-view onScroll | 高 | 中 |
-| 3b | window.scrollTo() → ScrollViewContext | 中 | 小 |
-| 3c | window.addEventListener('scroll') 移除 | 高 | 小 |
-| **4 — 文本样式 + 验证** | | | |
-| 4a | white-space:pre → 数据层处理 | 中 | 小 |
-| 4b | overflow-wrap → word-break | 低 | 小 |
-| 4c | text-overflow:ellipsis 在 view 上 → text 组件 | 低 | 中 |
-| 4d | position:fixed 浮层真机验证 | 高 | 中 |
-| 4e | Video/Map 原生组件真机验证 | 高 | 中 |
-| 4f | 跨分包组件真机验证 | 中 | 小 |
+> **WebView 影响**列标注该项变更对 WebView 渲染是否有副作用。标注「无影响」的项可提前并**并行**到日常需求中完成，无需等待 Skyline 上线批次。
+
+| 批次 | 内容 | 风险 | 工作量 | WebView 影响 |
+|---|---|---|---|---|
+| **1 — 配置 + flexDirection** | | | | |
+| 1a | app.json + 页面 json Skyline 必需配置 | 低 | 小 | ✅ 无影响（仅 Skyline 侧生效） |
+| 1b | ~150 处 display:flex 加 flexDirection:'row' | 低 | 中（可脚本批量） | ✅ 无影响（Web 默认值即为 row） |
+| **2 — CSS 不兼容属性 + scroll-view type** | | | | |
+| 2a | 5 处 position:sticky → 替代方案 | 中 | 中 | ⚠️ 有影响（DOM/布局调整） |
+| 2b | 5 处 overflow:scroll/auto → XScrollView | 中 | 中 | ⚠️ 有影响（布局结构调整） |
+| 2c | 1 处 float → flex 布局 | 低 | 小 | ⚠️ 有影响（布局改变） |
+| 2d | ~10 处 XScrollView 加 type 属性 | 低 | 小 | ✅ 无影响（WebView 忽略未知属性） |
+| **3 — 页面滚动体系迁移** | | | | |
+| 3a | window.scrollY → scroll-view onScroll | 高 | 中 | ⚠️ 有影响（架构级改动） |
+| 3b | window.scrollTo() → ScrollViewContext | 中 | 小 | ⚠️ 有影响 |
+| 3c | window.addEventListener('scroll') 移除 | 高 | 小 | ⚠️ 有影响 |
+| **4 — 文本样式 + 验证** | | | | |
+| 4a | white-space:pre → 数据层处理 | 中 | 小 | ⚠️ 有影响（两端行为都变） |
+| 4b | overflow-wrap → word-break | 低 | 小 | ✅ 无影响（行为接近，可提前改） |
+| 4c | text-overflow:ellipsis 在 view 上 → text 组件 | 低 | 中 | ⚠️ 有影响（DOM 改动） |
+| 4d | position:fixed 浮层真机验证 | 高 | 中 | ✅ 无影响（仅验证，不改代码） |
+| 4e | Video/Map 原生组件真机验证 | 高 | 中 | ✅ 无影响（仅验证） |
+| 4f | 跨分包组件真机验证 | 中 | 小 | ✅ 无影响（仅验证） |
 
 ---
 

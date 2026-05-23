@@ -25,6 +25,8 @@ container: {
 
 **说明**：Skyline 下 `<view>` 默认 `flex-direction: column`（Web 标准为 `row`）。配置 `defaultDisplayBlock: true` 后变为 `row`，但**显式设置是最安全的做法**。
 
+**WebView 影响**：✅ 无影响。Web 标准默认值即为 `row`，显式指定不会改变行为。
+
 ---
 
 ### 模式 2：XScrollView 加 type 属性
@@ -42,6 +44,8 @@ container: {
 ```
 
 **说明**：Skyline 下 scroll-view 必须指定 type（list/custom/nested），否则编译报错。
+
+**WebView 影响**：✅ 无影响。WebView 忽略未知属性 `type`，行为不变。
 
 ---
 
@@ -66,6 +70,8 @@ container: {
 
 **说明**：Skyline 不支持 overflow:scroll/auto，必须用 scroll-view。横向滚动需 `enable-flex`。
 
+**WebView 影响**：⚠️ 有影响。从 CSS 布局改为 scroll-view 组件，DOM 结构调整，两端都需要回归。
+
 ---
 
 ### 模式 4：position:sticky 替代
@@ -87,6 +93,8 @@ container: {
 <View style={{ position: 'fixed', top: 0, zIndex: 100 }}>吸顶内容</View>
 <View style={{ height: stickyHeight }} />
 ```
+
+**WebView 影响**：⚠️ 有影响。DOM 结构调整或布局方式改变，两端都需要回归验证。
 
 ---
 
@@ -119,3 +127,5 @@ useEffect(() => {
 ```
 
 **说明**：Skyline 下页面级全局滚动不存在，所有滚动必须在 scroll-view 内。
+
+**WebView 影响**：⚠️ 有影响。这是架构级改动，改变页面滚动体系，两端都需要完整回归。
