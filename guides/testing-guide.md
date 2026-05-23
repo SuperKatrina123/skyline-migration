@@ -74,6 +74,20 @@ npm run build:mini
 
 ### 2.3 集成到 CI / pre-commit
 
+> 以下流程需要在**应用仓库**（`xtaro-hotel-detail-page`）中配置，不是本知识库。
+
+#### 2.3.1 前置准备
+
+将检查脚本复制到应用仓库：
+
+```bash
+# 在应用仓库根目录执行
+mkdir -p scripts/
+cp /Users/sakura/Desktop/DDU/skyline-migration/scripts/skyline-check.js scripts/
+```
+
+添加 npm scripts 到 `package.json`：
+
 ```json
 {
   "scripts": {
@@ -82,6 +96,69 @@ npm run build:mini
   }
 }
 ```
+
+#### 2.3.2 Pre-commit 钩子（推荐，提交前拦截）
+
+使用 husky 在 `git commit` 前自动检查变更文件：
+
+```bash
+npm install husky --save-dev
+npx husky install
+npx husky add .husky/pre-commit "node scripts/skyline-check.js"
+```
+
+效果：每次 `git commit` 前自动扫描，有 ERROR 则阻断提交。
+
+#### 2.3.3 GitHub Actions CI（PR 自动门禁）
+
+在应用仓库创建 `.github/workflows/skyline-check.yml`：
+
+```yaml
+name: Skyline Compatibility Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+
+jobs:
+  skyline-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 需要完整 git 历史来 diff
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Skyline check (changed files)
+        run: node scripts/skyline-check.js
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build:mini
+```
+
+效果：PR 提交或推送时自动运行，ERROR 会在 GitHub 上显示为 check failure，阻止合入。
+
+#### 2.3.4 推荐组合
+
+```
+日常开发   node scripts/skyline-check.js       人工触发, <5s
+提交代码   husky pre-commit hook               自动触发, 阻断 ERROR
+PR 合入    GitHub Actions                      自动触发, CI 门禁
+```
+
+三个环节覆盖"改完立刻查 → 提交时拦截 → 合入前兜底"。
 
 ---
 
