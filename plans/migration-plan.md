@@ -45,7 +45,8 @@
 | 4b | overflow-wrap → word-break | 低 | 小 | ✅ 无影响（行为接近，可提前改） |
 | 4c | text-overflow:ellipsis 在 view 上 → text 组件 | 低 | 中 | ⚠️ 有影响（DOM 改动） |
 | 4d | position:fixed 浮层真机验证 | 高 | 中 | ✅ 无影响（仅验证，不改代码） |
-| 4e | Video/Map 原生组件真机验证 | 高 | 中 | ✅ 无影响（仅验证） |
+| 4e | Video/Map 原生组件真机验证 | 中 | 中 | ✅ 无影响（仅验证） |
+| | — Video：不需全屏，需验证黑屏/加载慢/断网恢复 | | | |
 | 4f | 跨分包组件真机验证 | 中 | 小 | ✅ 无影响（仅验证） |
 
 ---

@@ -27,7 +27,7 @@
 | `XView` / `View` | 大量使用 | ✅ 支持 | — | — |
 | `XImage` / `Image` | 大量使用 | ✅ 支持 | Skyline 仅 5 种缩放模式（无裁剪模式） | — |
 | `XText` / `Text` | 大量使用 | ✅ 支持 | text-overflow:ellipsis 仅在 text 组件生效 | P2 |
-| Video（原生视频） | 少量 | ⚠️ 需验证 | 真机测试层级和行为 | Info |
+| Video（原生视频） | 少量 | ⚠️ 有风险 | 不需全屏，无需关注全屏问题。需真机验证：① 黑屏/无法播放 ② iOS/鸿蒙加载速度 ③ 断网重连后恢复。详见微信开放社区 Skyline 专区已反馈。 | P2 |
 | 跨分包组件 | 5 个 | ⚠️ 需验证 | 分包引用需要真机测试 | Info |
 | 自定义导航栏 | 已配 navigationStyle:custom | ✅ 已配置 | `index.config.mini.js` 已有 | — |
 
