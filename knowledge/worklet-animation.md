@@ -1,17 +1,13 @@
 # Worklet 动画系统
 
-> 由 AI 基于微信官方 `skyline-worklet` 文档填充。记录项目动画使用情况及 Skyline 下的迁移方案。
-
-## 核心概念
-
-| 概念 | 说明 | 关键 API |
-|------|------|----------|
-| worklet 函数 | 运行在 UI 线程的动画函数 | `runOnUI()`, `runOnJS()` |
-| 共享变量 | 跨线程同步的值 | `shared()`, `derived()` |
-| 动画驱动 | 绑定到节点样式 | `applyAnimatedStyle()` |
+> 记录项目动画使用情况及 Skyline 下的迁移方案。
 
 ## 项目动画方式扫描
 
-| 动画类型 | 使用情况 | 涉及文件 | Skyline 兼容性 | 注意事项 |
-|---------|---------|---------|---------------|---------|
-| — | — | — | — | — |
+| 动画类型 | 使用情况 | Skyline 兼容性 | 说明 |
+|---|---|---|---|
+| CSS transition | 部分组件使用 | ✅ 支持 | 无迁移成本 |
+| CSS animation | 未大量使用 | ✅ 支持 | — |
+| Worklet 动画 | **未使用** | ❌ 不存在 | 新能力，可引入优化手势 |
+| requestAnimationFrame | 首屏优化 | ⚠️ 行为可能有差异 | 需验证 |
+| 下拉刷新动画 | 未使用 | — | ScrollViewContext.triggerRefresh() |
