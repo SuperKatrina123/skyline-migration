@@ -1,0 +1,66 @@
+id: "skyline-issue-003"
+status: "open"
+title: "设施区域 scrollview 滚动条明显"
+inputs:
+  raw_description: "设施区域 scrollview 滚动条明显"
+  page_hint: "酒店详情页"
+  mode: "skyline"
+  device: "模拟器"
+  attachments:
+    screenshots: []
+    videos:
+      - "issues/assets/skyline-issue-003-scrollbar.mov"
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: "pages/hoteldetail/detail"
+  page_name: "酒店详情页"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "设施推荐区域（拍照出片/套房/免费停车场等）横向滚动时出现明显滚动条"
+  before_behavior: "WebView 下无可见滚动条"
+  after_behavior: "Skyline 下滚动时出现原生滚动条"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "横向滑动设施推荐区域"
+risk:
+  types:
+    - "scroll"
+  level: "low"
+  suspected_keywords:
+    - "overflow:scroll"
+    - "showScrollbar"
+    - "XFlatList"
+component_retrieval:
+  confirmed_component: "FacilityRecommend (FacilityScrollView)"
+  reviewed: true
+  status: "confirmed"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Components/FacilityRecommend/style.ts"
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Components/FacilityRecommend/index.tsx"
+  suspected_components:
+    - "FacilityScrollView"
+  evidence:
+    - type: "code"
+      level: 4
+      detail: "scrollContainer 样式有 overflow:'scroll'，XFlatList 设了 showsHorizontalScrollIndicator={false} 但 Skyline 下外层 overflow:scroll 可能独立产生滚动条"
+resolution:
+  root_cause: "scrollContainer 的 overflow:'scroll' 在 Skyline 下产生原生滚动条（Skyline 不支持 overflow:scroll，应由 scroll-view 组件控制滚动）"
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+  batch: "1b"
+  failed_attempts:
+    - approach: "overflow:'scroll' 改为 overflow:'hidden'"
+      reason: "验证未通过（具体表现待确认）"
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+verification:
+  result: "pending"
+  notes: "overflow:'scroll' → 'hidden' 验证未通过，需进一步排查"

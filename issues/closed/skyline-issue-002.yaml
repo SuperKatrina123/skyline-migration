@@ -1,0 +1,47 @@
+id: "skyline-issue-002"
+status: "closed"
+title: "评分区域评论文字超出容器未换行"
+inputs:
+  raw_description: "评分区域评论文字超出容器未换行，预期是换行展示"
+  page_hint: "酒店详情页"
+  mode: "skyline"
+  device: "模拟器"
+  attachments:
+    screenshots:
+      - "issues/assets/skyline-issue-002-text-overflow.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: "pages/hoteldetail/detail"
+  page_name: "酒店详情页"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "评分区域的评论摘要文字（如'地理位置方便，愚园路」'）超出容器边界，未能换行"
+  before_behavior: "WebView 下文字在容器内正常换行"
+  after_behavior: "Skyline 下文字单行溢出容器"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "观察评分区域下方的评论摘要文字"
+resolution:
+  root_cause: "Skyline flex column 容器 alignItems:'start' 时，子文字元素不会自动继承容器宽度，导致文字无法换行"
+  fix_summary:
+    - "sentenceText 和 sentenceTextV2 添加 alignSelf:'stretch'，让文字继承容器宽度从而正常换行"
+  changed_files:
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Components/CommentInfoWrapper/style.ts"
+  reusable_rule: "Skyline flex column + alignItems:'start' 时，需要换行的文字元素需显式加 alignSelf:'stretch'"
+component_retrieval:
+  confirmed_component: "CommentInfoWrapper"
+  reviewed: true
+  status: "confirmed"
+verification:
+  result: "passed"
+  devices:
+    - "模拟器"
+case_output:
+  should_write_to_kb: true
+  target_file: "knowledge/cases/flex-align-items-text-wrap.md"
