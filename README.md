@@ -60,21 +60,41 @@
 | 共享 style.ts，属性**只影响小程序** | 直接改 |
 | `position: fixed` / `@keyframes` | **先保留**，Skyline 下测试后决定是否需要改 |
 | `overflow: auto/scroll` | 改 `.mini.*` 或用 `IS_MINI` 保护 |
-| `display: flex`（默认 direction 差异） | `IS_MINI` 条件分支加 `flexDirection` |
+
+## 配置优先策略
+
+能通过 `rendererOptions` 配置对齐 WebView 的差异，优先用配置消除，不改代码：
+
+```json
+"rendererOptions": {
+    "skyline": {
+        "defaultDisplayBlock": true,
+        "defaultContentBox": true,
+        "tagNameStyleIsolation": "legacy",
+        "keyframeStyleIsolation": "legacy"
+    }
+}
+```
+
+| 配置 | 消除的问题 |
+|------|-----------|
+| `defaultDisplayBlock: true` | view 默认 flex+column → 改为 block（消除 ~150 处 flexDirection） |
+| `defaultContentBox: true` | box-sizing 默认 border-box → 改为 content-box |
+| `tagNameStyleIsolation: "legacy"` | tag 选择器跨组件不生效 → 对齐 WebView |
+| `keyframeStyleIsolation: "legacy"` | @keyframe 跨组件不生效 → 对齐 WebView |
 
 ## 迁移策略
 
-**AB 实验只控制 `renderer: "skyline"` 配置**，代码只维护一份，不做两套代码：
+**配置优先 + AB 实验控制回退**：
 
 ```
-AB 实验 (HTL_Skyline_Migration)
+rendererOptions 配置对齐 WebView（消除大量兼容改动）
        │
        ▼
-app.json renderer: "skyline"
+仅改配置无法覆盖的 CSS/组件/API 差异
        │
        ▼
-同一份代码 → WebView 或 Skyline 渲染引擎
-      （回退 = 关 AB + 发版）
+AB 实验控制灰度（关 AB 即回退，无需发版）
 ```
 
 详见 `plans/migration-plan.md`。
