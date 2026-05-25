@@ -46,27 +46,35 @@
 
 > **WebView 影响**列标注该项变更对 WebView 渲染是否有副作用。标注「无影响」的项可提前并行到日常需求中完成。
 
-| 批次 | 内容 | 风险 | 工作量 | WebView 影响 |
-|---|---|---|---|---|
-| **1 — CSS 不兼容属性 + scroll-view type** | | | | |
-| 1a | 5 处 position:sticky → sticky-header/sticky-section | 中 | 中 | ⚠️ 有影响（DOM/布局调整） |
-| 1b | 5 处 overflow:scroll/auto → scroll-view | 中 | 中 | ⚠️ 有影响（布局结构调整） |
-| 1c | 1 处 float → flex 布局 | 低 | 小 | ⚠️ 有影响（布局改变） |
-| 1d | ~10 处 scroll-view 加 type 属性 | 低 | 小 | ✅ 无影响（WebView 忽略未知属性） |
-| **2 — 页面滚动体系迁移** | | | | |
-| 2a | window.scrollY → scroll-view onScroll | 高 | 中 | ⚠️ 有影响（架构级改动） |
-| 2b | window.scrollTo() → ScrollViewContext | 中 | 小 | ⚠️ 有影响 |
-| 2c | window.addEventListener('scroll') 移除 | 高 | 小 | ⚠️ 有影响 |
-| **3 — 文本样式** | | | | |
-| 3a | white-space:pre/pre-wrap → 数据层处理或 text 组件 | 中 | 小 | ⚠️ 有影响 |
-| 3b | overflow-wrap:break-word → word-break:break-all | 低 | 小 | ✅ 无影响（行为接近） |
-| 3c | text-overflow:ellipsis 在 view 上 → `<text overflow="ellipsis" max-lines="N">` | 低 | 中 | ⚠️ 有影响（DOM 改动） |
-| 3d | 多段文本内联 → text/span 组件或 flex 布局 | 低 | 中 | ⚠️ 有影响 |
-| **4 — 验证** | | | | |
-| 4a | position:fixed 浮层真机验证（z-index 仅兄弟节点生效） | 高 | 中 | ✅ 无影响（仅验证） |
-| 4b | Video/Map 原生组件真机验证 | 中 | 中 | ✅ 无影响（仅验证） |
-| 4c | 跨分包组件真机验证 | 中 | 小 | ✅ 无影响（仅验证） |
-| 4d | scroll-view 子节点按需渲染验证（getBoundingClientRect） | 中 | 小 | ✅ 无影响（仅验证） |
+| 批次 | 内容 | 风险 | 工作量 | WebView 影响 | 进度 |
+|---|---|---|---|---|---|
+| **1 — CSS 不兼容属性 + scroll-view type** | | | | | |
+| 1a | 5 处 position:sticky → sticky-header/sticky-section | 中 | 中 | ⚠️ 有影响（DOM/布局调整） | 🔧 B 类 3 处已改（未验证），A 类未动 |
+| 1b | 5 处 overflow:scroll/auto → scroll-view | 中 | 中 | ⚠️ 有影响（布局结构调整） | ❌ Issue #003 open，首次修复失败 |
+| 1c | 1 处 float → flex 布局 | 低 | 小 | ⚠️ 有影响（布局改变） | 未开始 |
+| 1d | ~10 处 scroll-view 加 type 属性 | 低 | 小 | ✅ 无影响（WebView 忽略未知属性） | 未开始 |
+| **2 — 页面滚动体系迁移** | | | | | |
+| 2a | window.scrollY → scroll-view onScroll | 高 | 中 | ⚠️ 有影响（架构级改动） | 未开始 |
+| 2b | window.scrollTo() → ScrollViewContext | 中 | 小 | ⚠️ 有影响 | 未开始 |
+| 2c | window.addEventListener('scroll') 移除 | 高 | 小 | ⚠️ 有影响 | 未开始 |
+| **3 — 文本样式** | | | | | |
+| 3a | white-space:pre/pre-wrap → 数据层处理或 text 组件 | 中 | 小 | ⚠️ 有影响 | 未开始 |
+| 3b | overflow-wrap:break-word → word-break:break-all | 低 | 小 | ✅ 无影响（行为接近） | 未开始 |
+| 3c | text-overflow:ellipsis 在 view 上 → `<text overflow="ellipsis" max-lines="N">` | 低 | 中 | ⚠️ 有影响（DOM 改动） | 未开始 |
+| 3d | 多段文本内联 → text/span 组件或 flex 布局 | 低 | 中 | ⚠️ 有影响 | 未开始 |
+| **4 — 验证** | | | | | |
+| 4a | position:fixed 浮层真机验证（z-index 仅兄弟节点生效） | 高 | 中 | ✅ 无影响（仅验证） | 未开始 |
+| 4b | Video/Map 原生组件真机验证 | 中 | 中 | ✅ 无影响（仅验证） | 未开始 |
+| 4c | 跨分包组件真机验证 | 中 | 小 | ✅ 无影响（仅验证） | 未开始 |
+| 4d | scroll-view 子节点按需渲染验证（getBoundingClientRect） | 中 | 小 | ✅ 无影响（仅验证） | 未开始 |
+
+### 阻塞项
+
+| Issue | 优先级 | 阻塞内容 | 待解决 |
+|-------|--------|----------|--------|
+| #004 | P0 | `wx.createAnimation` 不兼容，7 处浮层失效 | 需升级 xtaro-hxh-poplayer 或替代方案 |
+| #001 | P1 | absolute shrink-to-fit 不支持 | 需 JS 动态计算宽度 |
+| #003 | P2 | overflow:scroll 滚动条 | 证据不足，需 more search |
 
 ---
 
