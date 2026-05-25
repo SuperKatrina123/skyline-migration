@@ -1,0 +1,100 @@
+id: skyline-issue-001
+status: draft # draft | enriched | reviewed | fixing | verifying | closed
+
+title: ""
+
+inputs:
+  raw_description: ""
+  page_hint: ""
+  mode: "" # webview | skyline | unknown
+  device: ""
+  attachments:
+    screenshots: []
+    videos: []
+    logs: []
+
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: ""
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+
+symptom:
+  summary: ""
+  before_behavior: ""
+  after_behavior: ""
+  reproduce_steps: []
+
+visual_context:
+  source: "" # screenshot_pending_analysis | screenshot_analyzed | user_description | none
+  affected_area: ""
+  visible_text: []
+  visual_component_types: []
+  observed_symptoms: []
+  inferred_risk_types: []
+  confidence: "" # high | medium | low | none
+
+risk:
+  types: [] # fixed-bottom | sticky | scroll | swiper | popup
+  level: unknown # low | medium | high | unknown
+  suspected_keywords: []
+
+knowledge:
+  queries: []
+  matched_docs: []
+  matched_rules: []
+
+component_retrieval:
+  search_queries: []
+  candidate_components: []
+  # candidate structure:
+  #   - name: ComponentName
+  #     file: src/path/to/file.tsx
+  #     role: likely_source | affected_area | container_context | unknown
+  #     confidence: high | medium | low
+  #     evidence:
+  #       route_match: false
+  #       text_match: false
+  #       import_relation: false
+  #       style_signal: false
+  #       code_signal: false
+  #       visual_match: false
+  #       name_match: false
+  #     reason: ""
+  #     missing_evidence: []
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: pending # pending | insufficient_code_evidence | ready_for_fix
+
+code_context:
+  suspected_files: []
+  suspected_components: []
+  evidence: []
+
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+
+verification:
+  checklist: []
+  result: pending # pending | passed | failed
+  devices: []
+  notes: ""
+
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+
+uncertainty:
+  why_might_be_wrong: []
+  missing_evidence: []
