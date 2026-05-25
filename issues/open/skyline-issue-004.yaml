@@ -1,0 +1,86 @@
+id: "skyline-issue-004"
+status: "open"
+title: "订房优惠领券点击无法唤起浮层（XPoplayer 使用 wx.createAnimation）"
+inputs:
+  raw_description: "订房优惠领券点击无法唤起浮层"
+  page_hint: "酒店详情页"
+  mode: "skyline"
+  device: "模拟器"
+  attachments:
+    screenshots:
+      - "issues/assets/skyline-issue-004-coupon-layer.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: "pages/hoteldetail/detail"
+  page_name: "酒店详情页"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "点击'订房优惠'栏的'领券'按钮，浮层无法弹出。WebView 下正常。"
+  before_behavior: "WebView 下点击领券弹出 IdentityFloat 半屏浮层"
+  after_behavior: "Skyline 下点击后无反应，console 有 wx.getSystemInfoSync deprecated 警告"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页（需要有营销 banner 数据）"
+    - "点击'订房优惠'栏或'领券'按钮"
+    - "观察：无浮层弹出"
+risk:
+  types:
+    - "animation"
+    - "popup"
+  level: "high"
+  suspected_keywords:
+    - "wx.createAnimation"
+    - "XPoplayer"
+    - "PopLayer"
+    - "Taro.createAnimation"
+component_retrieval:
+  confirmed_component: "BannerFloat → IdentityFloat → XPoplayer"
+  reviewed: true
+  status: "confirmed"
+code_context:
+  suspected_files:
+    - "dist/mini/.minicache/tarobaseproject/node_modules/@ctrip/xtaro-mini/component/XPoplayer/action.ts"
+    - "dist/mini/.minicache/tarobaseproject/node_modules/@ctrip/xtaro-mini/component/XPoplayer/index.tsx"
+    - "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerFloat/IdentityFloat/index.tsx"
+  suspected_components:
+    - "XPoplayer (xtaro-mini)"
+    - "IdentityFloat"
+    - "BannerFloat"
+  evidence:
+    - type: "code"
+      level: 4
+      detail: "XPoplayer/action.ts line 90: Taro.createAnimation() — Skyline 不支持 wx.createAnimation"
+    - type: "code"
+      level: 4
+      detail: "XPoplayer/action.ts line 22-23: Taro.getSystemInfoSync() 触发 deprecated 警告"
+    - type: "code"
+      level: 4
+      detail: "浮层初始状态 translateY(1000px) + opacity:0，动画不执行导致永远不可见"
+resolution:
+  root_cause: "XPoplayer 内部使用 Taro.createAnimation (wx.createAnimation) 做弹出动画，Skyline 不支持此 API，动画不执行导致浮层停留在屏幕外（translateY:1000px）"
+  fix_direction: |
+    方案选择（优先级从高到低）：
+    1. 升级 xtaro-hxh-poplayer 版本（如果有 Skyline 兼容版本）
+    2. mini 端用微信原生半屏组件（page-container / draggable-sheet）替代 XPoplayer
+    3. 自己实现不依赖 wx.createAnimation 的弹层（CSS transition 或 worklet 动画）
+  fix_summary: []
+  changed_files: []
+  reusable_rule: "Skyline 不支持 wx.createAnimation，所有依赖此 API 的弹层/动画组件都需要替换方案"
+  impact_scope: |
+    影响所有使用 XPoplayer / PopLayer 的浮层：
+    - IdentityFloat（订房优惠浮层）
+    - GamingPrivilegeFloat（游戏特权浮层）
+    - HighlightFloat（亮点浮层）
+    - CombineExplainLayer（组合说明浮层）
+    共 7 处引用 xtaro-hxh-poplayer
+verification:
+  result: "pending"
+  notes: "需确认 xtaro-hxh-poplayer 是否有 Skyline 兼容版本"
+case_output:
+  should_write_to_kb: true
+  target_file: "knowledge/cases/wx-createAnimation-skyline.md"
