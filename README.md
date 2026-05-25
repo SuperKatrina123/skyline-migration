@@ -104,6 +104,64 @@ Step 3 ── 验证与沉淀
   └─ 更新 knowledge/ + migration-patterns.md
 ```
 
+## Migration Issue Card 闭环
+
+Issue Card 是迁移问题的结构化管理协议，把问题描述、组件定位、验证计划、经验沉淀串成闭环。
+
+### 解决的问题
+
+- **问题描述成本高** → 一行描述即可创建 Card，自动推断风险类型
+- **组件定位不稳定** → 基于代码证据的 candidate 机制，不允许凭空猜测
+- **验证手动遗漏** → 自动生成 checklist，覆盖 WebView/Skyline/iOS/Android/非微信端
+- **经验难沉淀** → close 时自动生成 knowledge case 草案
+
+### 基本流程
+
+```
+create → enrich → confirm → plan → 人工验证 → close
+```
+
+### CLI 使用示例
+
+```bash
+# 创建
+node scripts/issue-card.js create "底部按钮遮挡内容" --page "订单确认页" --mode skyline
+
+# 检索候选组件
+node scripts/issue-card.js enrich issues/open/skyline-issue-001.yaml --repo /path/to/project
+
+# 查看候选
+node scripts/issue-card.js candidates issues/open/skyline-issue-001.yaml
+
+# 确认/排除
+node scripts/issue-card.js confirm issues/open/skyline-issue-001.yaml OrderSubmitBar
+node scripts/issue-card.js reject issues/open/skyline-issue-001.yaml OrderContent
+
+# 生成验证计划
+node scripts/issue-card.js plan issues/open/skyline-issue-001.yaml
+
+# 关闭
+node scripts/issue-card.js close issues/open/skyline-issue-001.yaml --result passed
+```
+
+### 证据等级
+
+| Level | 类型 | 能力 |
+|-------|------|------|
+| 1 | User Report | 弱证据，只能推断 risk types |
+| 2 | Visual Evidence | 不能单独证明根因 |
+| 3 | Runtime Evidence | 辅助判断 |
+| 4 | Code Evidence | 组件定位的强证据 |
+| 5 | Verification Evidence | 关闭 Issue 的必要证据 |
+
+### Candidate Review 机制
+
+- `confirm`: 确认目标组件（需要足够 Code Evidence）
+- `reject`: 排除组件，保留历史
+- `more`: 继续检索
+
+详见 `guides/issue-card-workflow.md`。
+
 ## 文件结构
 
 ```
@@ -116,16 +174,25 @@ skyline-migration/
 │   ├── project-scan-summary.md         # 项目扫描总览（含滚动/动画/路由数据）
 │   ├── scroll-api-guide.md             # Skyline 滚动控制 API
 │   ├── worklet-animation.md            # Worklet 动画系统
-│   └── route-guide.md                  # 自定义路由与页面转场
+│   ├── route-guide.md                  # 自定义路由与页面转场
+│   └── cases/                          # 迁移案例沉淀
 ├── guides/                             # 迁移参考
 │   ├── migration-patterns.md           # 迁移模式示例库
+│   ├── issue-card-workflow.md          # Issue Card 工作流与证据规则
 │   ├── team-workflow.md                # 团队日常维护流程（面向人）
 │   ├── workflow.md                     # 三步骤工作流
 │   └── testing-guide.md                # 三层测试指南
+├── issues/                             # Migration Issue Cards
+│   ├── templates/                      # Card 模板
+│   ├── open/                           # 进行中的 Card
+│   └── closed/                         # 已关闭的 Card
+├── prompts/                            # LLM Prompt 模板
 ├── plans/                              # 迁移方案
 │   └── migration-plan.md               # 分阶段迁移计划（含 AB 开关、CSS 规则、多端兼容）
+├── reports/verification/               # 验证报告
 ├── scripts/
-│   └── skyline-check.js                # Skyline 兼容性快速检查脚本
+│   ├── skyline-check.js                # Skyline 兼容性快速检查脚本
+│   └── issue-card.js                   # Issue Card CLI
 ```
 
 ## 相关技能
