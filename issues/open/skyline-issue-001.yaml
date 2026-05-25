@@ -30,6 +30,8 @@ symptom:
 visual_context:
   source: "screenshot"
   affected_area: "图片 gallery 底部 tab 栏（封面/相册区域）"
+  symptom_confidence: "high"
+  root_cause_confidence: "unknown"
   visible_text:
     - "封面"
     - "相册"
@@ -37,10 +39,6 @@ visual_context:
     - "horizontal-scroll-tab"
   observed_symptoms:
     - "tab 栏宽度未被内容撑开"
-  inferred_risk_types:
-    - "scroll"
-    - "layout"
-  confidence: "high"
 risk:
   types:
     - "scroll"
@@ -57,33 +55,48 @@ knowledge:
     - "Skyline absolute 元素宽度 shrink-to-fit 行为"
     - "Skyline enableScrollViewAutoSize 限制"
     - "Skyline scroll-view 宽度撑开"
-  matched_docs: []
-  matched_rules:
-    - "Skyline 下所有节点默认 position:relative"
-    - "enableScrollViewAutoSize 让 scroll-view 根据内容撑开，但父容器宽度仍需保证"
+  matched_rules: []
 component_retrieval:
   search_queries:
     - "AlbumTab XScrollView scrollX"
     - "ImmersiveHead Tab"
-  candidate_components:
-    - name: "AlbumTab"
-      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
-      confidence: "high"
-      evidence:
-        - type: "code"
-          detail: "XScrollView scrollX + tabContainer maxWidth:480 + parent albumTab position:absolute left:16 无 width/right"
-  rejected_components: []
-  confirmed_component: "AlbumTab"
-  reviewed: true
-  status: "confirmed"
+  status: "ready_for_review"
+  reviewed: false
+candidate_components:
+  - name: "AlbumTab"
+    file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
+    role: "likely_source"
+    confidence: "high"
+    evidence:
+      route_match: true
+      text_match: true
+      import_relation: true
+      style_signal: true
+      code_signal: true
+      visual_match: true
+      name_match: true
+    reason: "XScrollView scrollX + tabContainer maxWidth:480 + 外层 albumTab position:absolute left:16 无显式 width"
+    missing_evidence:
+      - "需要在 Skyline 面板查看实际计算宽度"
+  - name: "ImmersiveHead"
+    file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/style.ts"
+    role: "container_context"
+    confidence: "medium"
+    evidence:
+      route_match: true
+      text_match: false
+      import_relation: true
+      style_signal: true
+      code_signal: false
+      visual_match: false
+      name_match: false
+    reason: "albumTab 的 position:absolute 定义在此组件样式中，是宽度问题的布局上下文"
+    missing_evidence: []
 code_context:
   suspected_files:
     - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/style.ts"
     - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
     - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/style.ts"
-  suspected_components:
-    - "AlbumTab"
-    - "ImmersiveHead"
   evidence:
     - type: "code"
       level: 4
@@ -94,26 +107,16 @@ code_context:
     - type: "visual"
       level: 2
       detail: "截图显示 tab 栏（封面/相册）宽度明显偏窄"
-claude_code:
-  task_prompt: ""
-  prompt_file: ""
-verification:
-  checklist:
-    - "给 albumTab 添加显式 width 或 right 约束，验证 Skyline 下宽度恢复"
-    - "验证 WebView 下表现不变"
-    - "验证多 tab（>3个）时滚动功能正常"
-  result: "pending"
-  devices:
-    - "模拟器"
-    - "真机 iOS"
-    - "真机 Android"
-  notes: ""
-resolution:
-  root_cause: "Skyline 下 absolute 定位元素不支持 shrink-to-fit（WebView 的 intrinsic sizing 行为），容器没有被子内容撑开宽度"
-  fix_direction: "需要在 JS 层根据 tab 数量动态计算宽度"
-  fix_summary: []
-  changed_files: []
-  reusable_rule: "Skyline 下 position:absolute 元素需要动态计算 width，不能依赖内容撑开"
+analysis:
+  likely_root_cause: "疑似 Skyline 下 absolute 定位元素不支持 shrink-to-fit（WebView 的 intrinsic sizing 行为），导致容器没有被子内容撑开宽度"
+  confidence: "high"
+  fix_direction_hypothesis: "可能需要在 JS 层根据 tab 数量动态计算宽度，不能写死（tabItem 个数由服务端下发）"
+  open_questions:
+    - "是否有 XTaro 原生 API 获取子元素渲染后宽度"
+    - "是否可以通过 onLayout 回调动态设置"
+  inferred_rules:
+    - "Skyline 下 position:absolute 元素疑似不支持 shrink-to-fit，需要显式宽度"
+    - "enableScrollViewAutoSize 可能只影响 scroll-view 非滚动方向的尺寸，不解决父容器宽度问题"
   constraints:
     - "width 不能写死——tabItem 个数由服务端下发，是动态的"
   failed_attempts:
@@ -127,9 +130,17 @@ resolution:
       reason: "父容器本身没有宽度，flex:1 也无法撑开"
     - approach: "XScrollView 加 type='list'"
       reason: "type 属性解决的是 Skyline scroll-view 渲染模式，不解决宽度问题"
-case_output:
-  should_write_to_kb: true
-  target_file: "knowledge/cases/absolute-shrink-to-fit.md"
+verification_checklist_draft:
+  - "Skyline 下 tab 栏宽度被内容正确撑开"
+  - "WebView 下表现不变"
+  - "多 tab（>3个）时宽度和滚动功能正常"
+  - "maxWidth:480 边界 case（tab 足够多时不超出）"
+  - "iOS / Android 双端验证"
+  - "AB 回退验证（关闭实验后无异常）"
+  - "非微信端回归（H5/CRN 不受影响）"
+verification:
+  result: "pending"
+  notes: "多次尝试修复未通过，需要 JS 动态计算方案"
 uncertainty:
   why_might_be_wrong:
     - "可能不是 absolute shrink-to-fit 问题，而是 overflow:hidden 在 Skyline 下裁切了内容"

@@ -31,13 +31,48 @@
 
 Issue Card 闭环管理迁移问题。CLI 入口：`node scripts/issue-card.js <command>`
 
+**状态机（严格单向流转）：**
+
+```
+draft → enriched → reviewed → fixing → verifying → closed
+```
+
+- **draft** = 现象结构化（只有 symptom/risk/keywords）
+- **enriched** = 候选组件 + 代码证据 + 根因假设（analysis.likely_root_cause）
+- **reviewed** = 人工确认候选组件（confirmed_component 有值）
+- **fixing** = 生成修复 prompt 并执行
+- **verifying** = 执行验证计划
+- **closed** = 验证后沉淀（resolution.root_cause + reusable_rule）
+
+**阶段约束（违反即错误）：**
+
+| 字段 | 最早允许写入阶段 |
+|------|------------------|
+| `confirmed_component` | reviewed（人工 confirm 后）|
+| `reviewed: true` | reviewed（人工 confirm 后）|
+| `resolution.root_cause` | closed |
+| `resolution.fix_summary` | closed |
+| `resolution.reusable_rule` | closed（且 verification.result=passed）|
+| `case_output.should_write_to_kb` | closed |
+| `analysis.likely_root_cause` | enriched |
+| `candidate_components` | enriched |
+| `matched_rules` | enriched |
+
 **核心规则：**
-- create 阶段**不定位组件**
-- enrich 阶段才做候选组件检索
+- create 阶段**只做现象结构化**，不定位组件，不推根因
+- enrich 阶段生成**候选和假设**，不确认组件，不写 resolution
+- enriched 后进入 ready_for_review，等人工 confirm/reject
 - `reviewed=false` **不能**进入 fix
-- `insufficient_code_evidence` **不生成**修复 prompt
-- 截图只能作为 visual evidence，不能单独定位组件
-- high confidence 需要至少 2 个 Code Evidence
+- `insufficient_code_evidence` **不生成**修复 prompt，必须建议 more search
+- 截图只能作为 visual evidence，不能单独定位组件或证明根因
+- `visual_context.root_cause_confidence` **永远不允许 high**（根因置信度只在 `analysis.confidence`）
+- high confidence 至少需要 2 个 Code Evidence（route_match / text_match / import_relation / style_signal / code_signal）
+- `knowledge.matched_rules` 的 doc 必须是**真实文件路径**，不允许 `doc: "inferred"`
+- 推理出的规则放 `analysis.inferred_rules`，使用推测语气
+- `component_retrieval.status` 枚举：`pending | insufficient_code_evidence | ready_for_review | ready_for_fix`
+- 构建产物路径（dist/、node_modules/）的候选必须标注 `build_artifact_constraint`
+- `analysis.likely_root_cause` 必须使用 hypothesis 语气（"疑似…"/"初步判断…"/"可能因为…"）
+- verification checklist 必须覆盖：WebView/Skyline 对比、iOS/Android 双端、AB 回退、非微信端回归
 
 **命令列表：**
 
@@ -54,7 +89,7 @@ Issue Card 闭环管理迁移问题。CLI 入口：`node scripts/issue-card.js <
 | `plan <file>` | 生成验证计划 |
 | `close <file> --result passed\|failed` | 关闭 card |
 
-**详见：** `guides/issue-card-workflow.md`
+**详见：** `guides/issue-card-workflow.md`、`prompts/generate-issue-card.md`、`prompts/enrich-issue-card.md`
 
 ---
 

@@ -1,5 +1,5 @@
 id: "skyline-issue-003"
-status: "open"
+status: "enriched"
 title: "设施区域 scrollview 滚动条明显"
 inputs:
   raw_description: "设施区域 scrollview 滚动条明显"
@@ -27,6 +27,11 @@ symptom:
     - "开启 Skyline 渲染"
     - "进入酒店详情页"
     - "横向滑动设施推荐区域"
+visual_context:
+  source: "video_pending_analysis"
+  affected_area: "设施推荐区域横向滚动"
+  symptom_confidence: "high"
+  root_cause_confidence: "unknown"
 risk:
   types:
     - "scroll"
@@ -35,32 +40,79 @@ risk:
     - "overflow:scroll"
     - "showScrollbar"
     - "XFlatList"
+knowledge:
+  queries:
+    - "Skyline scroll-view 滚动条隐藏"
+    - "Skyline overflow:scroll 行为"
+    - "XFlatList showScrollbar 配置"
+  matched_rules: []
 component_retrieval:
-  confirmed_component: "FacilityRecommend (FacilityScrollView)"
-  reviewed: true
-  status: "confirmed"
+  search_queries:
+    - "FacilityRecommend XFlatList scrollContainer"
+    - "FacilityScrollView showsHorizontalScrollIndicator"
+  status: "insufficient_code_evidence"
+  reviewed: false
+candidate_components:
+  - name: "FacilityScrollView"
+    file: "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Components/FacilityRecommend/index.tsx"
+    role: "likely_source"
+    confidence: "medium"
+    evidence:
+      route_match: true
+      text_match: false
+      import_relation: true
+      style_signal: true
+      code_signal: true
+      visual_match: false
+      name_match: true
+    reason: "scrollContainer 样式有 overflow:'scroll'，XFlatList 设了 showsHorizontalScrollIndicator={false} 但 Skyline 下外层 overflow:scroll 可能独立产生滚动条"
+    missing_evidence:
+      - "需确认滚动条来自 overflow:scroll 还是 XFlatList 内部的 scroll-view"
+      - "overflow:'hidden' 验证未通过，需进一步排查"
 code_context:
   suspected_files:
     - "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Components/FacilityRecommend/style.ts"
     - "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Components/FacilityRecommend/index.tsx"
-  suspected_components:
-    - "FacilityScrollView"
   evidence:
     - type: "code"
       level: 4
-      detail: "scrollContainer 样式有 overflow:'scroll'，XFlatList 设了 showsHorizontalScrollIndicator={false} 但 Skyline 下外层 overflow:scroll 可能独立产生滚动条"
-resolution:
-  root_cause: "scrollContainer 的 overflow:'scroll' 在 Skyline 下产生原生滚动条（Skyline 不支持 overflow:scroll，应由 scroll-view 组件控制滚动）"
-  fix_summary: []
-  changed_files: []
-  reusable_rule: ""
-  batch: "1b"
+      detail: "scrollContainer 样式有 overflow:'scroll'，Skyline 下可能产生原生滚动条"
+    - type: "code"
+      level: 3
+      detail: "XFlatList 设了 showsHorizontalScrollIndicator={false} 但 Skyline 下外层样式可能覆盖"
+analysis:
+  likely_root_cause: "疑似 scrollContainer 的 overflow:'scroll' 在 Skyline 下产生了原生滚动条，但修改为 hidden 验证未通过，根因可能在 XFlatList 内部的 scroll-view 组件"
+  confidence: "medium"
+  fix_direction_hypothesis: "可能需要检查 XFlatList mini 端实现中 scroll-view 的 showScrollbar 配置，或者排查 Skyline 下 scroll-view 的默认滚动条行为"
+  open_questions:
+    - "滚动条是来自外层 overflow:scroll 还是 XFlatList 内部的 scroll-view 组件"
+    - "overflow:'hidden' 为何验证不通过——是否破坏了滚动功能本身"
+    - "XFlatList mini 端实际实现中 scroll-view 是否有 showScrollbar={false}"
+  inferred_rules:
+    - "疑似 Skyline 下 overflow:scroll 会产生原生滚动条"
   failed_attempts:
     - approach: "overflow:'scroll' 改为 overflow:'hidden'"
       reason: "验证未通过（具体表现待确认）"
-case_output:
-  should_write_to_kb: false
-  target_file: ""
+  batch: "1b"
+verification_checklist_draft:
+  - "Skyline 下横向滑动无可见滚动条"
+  - "WebView 下横向滑动表现不变"
+  - "横向滚动功能本身正常（内容可滑动）"
+  - "iOS / Android 双端验证"
+  - "AB 回退验证"
+  - "非微信端回归"
 verification:
   result: "pending"
-  notes: "overflow:'scroll' → 'hidden' 验证未通过，需进一步排查"
+  notes: "overflow:'scroll' → 'hidden' 验证未通过，需进一步排查 XFlatList 内部实现"
+uncertainty:
+  why_might_be_wrong:
+    - "滚动条可能不是来自 overflow:scroll，而是 XFlatList 内部 scroll-view 默认行为"
+    - "overflow:'hidden' 验证失败说明外层 overflow 可能不是唯一因素"
+  missing_evidence:
+    - "XFlatList mini 端实际实现代码（dist/mini/.minicache 中的真实代码）"
+    - "Skyline 下 scroll-view 默认是否显示滚动条"
+    - "overflow:'hidden' 失败后的具体表现是什么（不能滚动？还是其他异常？）"
+  suggested_next_search:
+    - "检查 dist/mini/.minicache 中 XFlatList 的 scroll-view 实现"
+    - "确认 Skyline scroll-view 的 showScrollbar 默认值"
+    - "验证 overflow:'hidden' 失败的具体表现以缩小排查范围"
