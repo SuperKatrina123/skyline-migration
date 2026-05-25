@@ -169,9 +169,35 @@ PR 合入    GitHub Actions                      自动触发, CI 门禁
 ```
 微信开发者工具
   → 详情 → 本地设置 → 开启 Skyline 渲染调试
-  → 调试基础库 ≥ 3.0.0
+  → 调试基础库 ≥ 3.8.0（确保全部 rendererOptions 生效）
   → 模拟器左上角会显示当前 renderer 为 "skyline"
 ```
+
+需要在 `app.json` 中配置：
+
+```json
+{
+  "renderer": "skyline",
+  "componentFramework": "glass-easel",
+  "lazyCodeLoading": "requiredComponents",
+  "rendererOptions": {
+    "skyline": {
+      "sdkVersionBegin": "3.8.0",
+      "sdkVersionEnd": "15.255.255",
+      "defaultDisplayBlock": true,
+      "defaultContentBox": true,
+      "tagNameStyleIsolation": "legacy",
+      "enableScrollViewAutoSize": true,
+      "keyframeStyleIsolation": "legacy",
+      "disableABTest": true
+    }
+  }
+}
+```
+
+> 详细配置说明见 `knowledge/renderer-options.md`
+>
+> 如果模拟器左上角仍显示 `webview`，检查：页面级 json 是否覆盖了 renderer、基础库版本是否低于 sdkVersionBegin、是否有不支持的组件导致 fallback。
 
 ### 3.2 检查清单
 

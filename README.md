@@ -68,20 +68,28 @@
 ```json
 "rendererOptions": {
     "skyline": {
+        "disableABTest": true,
         "defaultDisplayBlock": true,
-        "defaultContentBox": true,
+        "defaultContentBox": false,
         "tagNameStyleIsolation": "legacy",
-        "keyframeStyleIsolation": "legacy"
+        "enableScrollViewAutoSize": true,
+        "keyframeStyleIsolation": "legacy",
+        "sdkVersionBegin": "3.8.0",
+        "sdkVersionEnd": "15.255.255"
     }
 }
 ```
 
 | 配置 | 消除的问题 |
 |------|-----------|
+| `disableABTest: true` | 关闭微信侧灰度，由我方 AB SDK 控制分流 |
 | `defaultDisplayBlock: true` | view 默认 flex+column → 改为 block（消除 ~150 处 flexDirection） |
-| `defaultContentBox: true` | box-sizing 默认 border-box → 改为 content-box |
+| `defaultContentBox: false` | 保持 Skyline 默认 border-box（项目已适配） |
 | `tagNameStyleIsolation: "legacy"` | tag 选择器跨组件不生效 → 对齐 WebView |
+| `enableScrollViewAutoSize: true` | scroll-view 需显式宽高 → 自动根据内容撑开 |
 | `keyframeStyleIsolation: "legacy"` | @keyframe 跨组件不生效 → 对齐 WebView |
+| `sdkVersionBegin: "3.8.0"` | 低于 3.8.0 自动 fallback WebView（覆盖所有配置项最低要求） |
+| `sdkVersionEnd: "15.255.255"` | 不设上限 |
 
 ## 迁移策略
 

@@ -13,16 +13,21 @@
 
 ---
 
-## 二、前置条件（Batch 0 — 已完成）
+## 二、前置条件（Batch 0 — 已完成 ✅）
 
-- [x] `index.config.mini.js` 已配 `navigationStyle: "custom"`
-- [x] `index.config.mini.js` 已配 `disableScroll: true`
-- [x] `index.config.mini.js` 已配 `renderer: "skyline"`
-- [x] `index.config.mini.js` 已配 `componentFramework: "glass-easel"`
-- [x] `rendererOptions.skyline.defaultDisplayBlock: true`（view 默认 block，消除 ~150 处 flexDirection）
-- [x] `rendererOptions.skyline.defaultContentBox: true`（box-sizing 默认 content-box，对齐 Web）
-- [x] `rendererOptions.skyline.tagNameStyleIsolation: "legacy"`（tag 选择器跨组件生效）
-- [x] `rendererOptions.skyline.keyframeStyleIsolation: "legacy"`（@keyframe 跨组件生效）
+> **目标：** Skyline 页面正常打开，rendererOptions 全量配置生效，低版本用户自动 fallback WebView。
+>
+> **验证结果：** 基础库 3.8.12，模拟器正常启动 Skyline 渲染，布局无大面积错乱。
+
+- [x] `renderer: "skyline"` + `componentFramework: "glass-easel"`
+- [x] `disableScroll: true`（禁用页面级原生滚动，由 XScrollView 接管）
+- [x] `disableABTest: true`（关闭微信侧灰度，由我方 AB SDK 控制分流）
+- [x] `sdkVersionBegin: "3.8.0"` / `sdkVersionEnd: "15.255.255"`（低于 3.8.0 自动 fallback WebView）
+- [x] `defaultDisplayBlock: true`（view 默认 block，消除 ~150 处 flexDirection 改动）
+- [x] `defaultContentBox: false`（保持 Skyline 默认 border-box）
+- [x] `tagNameStyleIsolation: "legacy"`（tag 选择器跨组件生效，对齐 WebView）
+- [x] `enableScrollViewAutoSize: true`（scroll-view 自动根据内容撑开）
+- [x] `keyframeStyleIsolation: "legacy"`（@keyframe 跨组件生效，对齐 WebView）
 
 ---
 
