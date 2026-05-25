@@ -16,9 +16,9 @@
 ## 二、前置条件
 
 - [x] `index.config.mini.js` 已配 `navigationStyle: "custom"`
-- [ ] 补 `disableScroll: true`（已用 XScrollView 但未禁用页面级滚动）
-- [ ] app.json 配 `renderer: "skyline"`、`componentFramework: "glass-easel"`、`lazyCodeLoading: "requiredComponents"`
-- [ ] app.json 配 `rendererOptions.defaultDisplayBlock: true`、`defaultContentBox: true`
+- [x] `index.config.mini.js` 已配 `disableScroll: true`
+- [x] `index.config.mini.js` 已配 `renderer: "skyline"`
+- [x] `index.config.mini.js` 已配 `componentFramework: "glass-easel"`
 
 ---
 
@@ -28,9 +28,10 @@
 
 | 批次 | 内容 | 风险 | 工作量 | WebView 影响 |
 |---|---|---|---|---|
-| **1 — 配置 + flexDirection** | | | | |
-| 1a | app.json + 页面 json Skyline 必需配置 | 低 | 小 | ✅ 无影响（仅 Skyline 侧生效） |
-| 1b | ~150 处 display:flex 加 flexDirection:'row' | 低 | 中（可脚本批量） | ✅ 无影响（Web 默认值即为 row） |
+| **0 — Skyline 配置** | | | | |
+| 0a | 页面 json Skyline 必需配置（renderer/componentFramework/disableScroll） | 低 | 小 | ✅ 无影响（仅 Skyline 侧生效） |
+| **1 — flexDirection** | | | | |
+| 1a | ~150 处 display:flex 加 flexDirection:'row' | 低 | 中（可脚本批量） | ✅ 无影响（Web 默认值即为 row） |
 | **2 — CSS 不兼容属性 + scroll-view type** | | | | |
 | 2a | 5 处 position:sticky → 替代方案 | 中 | 中 | ⚠️ 有影响（DOM/布局调整） |
 | 2b | 5 处 overflow:scroll/auto → XScrollView | 中 | 中 | ⚠️ 有影响（布局结构调整） |
@@ -64,9 +65,9 @@
 
 ## 五、回滚方案
 
-1. 关掉 AB 实验
-2. 发版回退
-3. 如仅改 `.mini.*` 文件，可直接恢复
+**目标：关掉 AB 实验即可回退，无需发版。**
+
+具体分流机制待定（双页面路由 / 动态跳转等），兼容改造先行。
 
 ---
 
