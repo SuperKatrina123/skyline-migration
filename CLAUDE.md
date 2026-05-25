@@ -27,6 +27,37 @@
 
 ---
 
+### Issue Card 命令
+
+Issue Card 闭环管理迁移问题。CLI 入口：`node scripts/issue-card.js <command>`
+
+**核心规则：**
+- create 阶段**不定位组件**
+- enrich 阶段才做候选组件检索
+- `reviewed=false` **不能**进入 fix
+- `insufficient_code_evidence` **不生成**修复 prompt
+- 截图只能作为 visual evidence，不能单独定位组件
+- high confidence 需要至少 2 个 Code Evidence
+
+**命令列表：**
+
+| 命令 | 说明 |
+|------|------|
+| `create "<desc>" --page <name> --mode <mode>` | 创建 draft card |
+| `list` | 列出 open/closed cards |
+| `show <id>` | 展示 card 摘要 |
+| `enrich <file> --repo <path>` | 检索候选组件 |
+| `candidates <file>` | 查看候选组件 |
+| `confirm <file> <name>` | 确认组件 |
+| `reject <file> <name>` | 排除组件 |
+| `more <file> --repo <path>` | 继续检索 |
+| `plan <file>` | 生成验证计划 |
+| `close <file> --result passed\|failed` | 关闭 card |
+
+**详见：** `guides/issue-card-workflow.md`
+
+---
+
 ## 项目背景
 
 本仓库是 XTaro 小程序 WebView → Skyline 渲染引擎的迁移知识库。
