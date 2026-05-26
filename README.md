@@ -217,7 +217,7 @@ skyline-migration/
 ├── prompts/                            # LLM Prompt 模板
 ├── plans/                              # 迁移方案
 │   └── migration-plan.md               # 分阶段迁移计划（含 AB 开关、CSS 规则、多端兼容）
-├── reports/verification/               # 验证报告
+├── reports/verification/               # 验证报告（Issue Card 闭环后产物，含真机截图、WebView/Skyline 对比、双端结果）
 ├── scripts/
 │   ├── skyline-check.js                # Skyline 兼容性快速检查脚本
 │   └── issue-card.js                   # Issue Card CLI
