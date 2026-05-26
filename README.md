@@ -200,6 +200,7 @@ skyline-migration/
 │   ├── component-mapping.md            # XTaro 组件 → 原生组件映射
 │   ├── compatibility-matrix.md         # CSS/组件/JS API 兼容性矩阵
 │   ├── project-scan-summary.md         # 项目扫描总览（含滚动/动画/路由数据）
+│   ├── renderer-options.md             # rendererOptions 配置参考
 │   ├── scroll-api-guide.md             # Skyline 滚动控制 API
 │   ├── worklet-animation.md            # Worklet 动画系统
 │   ├── route-guide.md                  # 自定义路由与页面转场
@@ -211,16 +212,24 @@ skyline-migration/
 │   ├── workflow.md                     # 三步骤工作流
 │   └── testing-guide.md                # 三层测试指南
 ├── issues/                             # Migration Issue Cards
+│   ├── SUMMARY.md                      # Issue 汇总表（优先级 + 不兼容 API 清单）
+│   ├── assets/                         # Issue 相关截图/视频
 │   ├── templates/                      # Card 模板
 │   ├── open/                           # 进行中的 Card
 │   └── closed/                         # 已关闭的 Card
 ├── prompts/                            # LLM Prompt 模板
+│   ├── generate-issue-card.md
+│   ├── enrich-issue-card.md
+│   ├── generate-fix-prompt.md
+│   ├── generate-verification-plan.md
+│   └── summarize-migration-case.md
 ├── plans/                              # 迁移方案
 │   └── migration-plan.md               # 分阶段迁移计划（含 AB 开关、CSS 规则、多端兼容）
-├── reports/verification/               # 验证报告（Issue Card 闭环后产物，含真机截图、WebView/Skyline 对比、双端结果）
+├── reports/verification/               # 验证报告（真机截图、WebView/Skyline 对比）
 ├── scripts/
 │   ├── skyline-check.js                # Skyline 兼容性快速检查脚本
-│   └── issue-card.js                   # Issue Card CLI
+│   ├── issue-card.js                   # Issue Card CLI
+│   └── scan-knowledge.js               # 知识扫描脚本
 ```
 
 ## 相关技能
