@@ -1,0 +1,188 @@
+id: "skyline-issue-016"
+status: "enriched"
+title: "文本溢出/截断在 Skyline 下不生效 — 含预售套餐、钟点房等多处"
+inputs:
+  raw_description: "多处文本溢出/截断问题：1) HotelProduct 标题溢出容器不换行；2) DescMeasure 明细项超长不打点；3) FlatSaleRoomName 钟点房卡片文字超长溢出"
+  page_hint: "Multiple"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots:
+      - "issues/assets/skyline-issue-016-title-overflow.png"
+      - "issues/assets/skyline-issue-016-hour-room-overflow.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "Multiple"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "多组件文本溢出问题：1) InStoreModule 预售套餐/美食卡片标题文字超出容器边界不换行；2) DescMeasure 明细项超长不显示打点；3) 钟点房卡片（FlatSaleRoomName）房型名称最后一行超长溢出未截断"
+  before_behavior: "WebView 下标题在容器内正常换行，明细项超长时显示 ellipsis 打点，房型名称溢出截断"
+  after_behavior: "Skyline 下标题文字不换行溢出容器右侧；明细项超长时不打点；钟点房房型名称最后一行溢出容器边界"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页，找到店内美食/预售套餐模块"
+    - "观察商品卡片标题（title）— 长文案不换行溢出容器"
+    - "观察商品明细项（desc）— 超长文案不打点"
+    - "进入钟点房（HourRoomList）场景，观察房型名称最后一行— 超长溢出容器"
+visual_context:
+  source: "screenshot"
+  affected_area: "HotelProduct 商品卡片标题 + PackageDesc/DescMeasure 明细描述 + FlatSaleRoomName 房型名称"
+  visible_text: []
+  visual_component_types:
+    - "XTextExposure"
+    - "XViewExposure"
+  observed_symptoms:
+    - "标题溢出容器"
+    - "明细不打点"
+    - "房型名称最后一行溢出"
+  inferred_risk_types:
+    - "text-overflow"
+  confidence: "none"
+risk:
+  types:
+    - "style"
+  level: "high"
+  suspected_keywords:
+    - "text-overflow"
+    - "ellipsis"
+    - "word-break"
+    - "white-space"
+    - "overflow"
+knowledge:
+  queries:
+    - "Skyline word-break break-word support"
+    - "Skyline text-overflow ellipsis not working"
+    - "Skyline text overflow requires overflow hidden on same element"
+  matched_docs:
+    - doc: "skyline-wxss/references/text.md"
+    - doc: "skyline-components references/text/text.md"
+  matched_rules:
+    - doc: "skyline-wxss (MUST: text-overflow 仅在 text 组件生效)"
+    - doc: "skyline-wxss (word-break: break-word 不支持，映射为 normal)"
+analysis:
+  likely_root_cause: >
+    三个独立的 Skyline CSS 兼容性问题：
+    1. 标题溢出：productName 使用 wordBreak:'break-word'，Skyline 不支持 break-word，映射为 normal，
+       导致文字不换行溢出。同时缺少 overflow:'hidden'，numberOfLines={2} 无法正常截断。
+    2. 明细不打点：descText 的 textOverflow:'ellipsis' 所在的元素缺少 overflow:'hidden' 和 whiteSpace:'nowrap'。
+       Skyline 下 text-overflow:ellipsis 需要这三个属性在同一元素上才能生效，而目前 overflow/whiteSpace 在父 view 上。
+    3. 钟点房房型名称溢出：roomNameText 使用 wordBreak:'break-all'（Skyline 支持），且文字在 XViewExposure（view 组件）中渲染，
+       缺少 overflow:'hidden' 导致最后一行超出容器边界时可见溢出。Skyline 下 text-overflow:ellipsis 仅在 text 组件上生效，
+       view 组件需用 overflow:hidden 至少保证不溢出。
+  confidence: "high"
+  inferred_rules:
+    - "Skyline 下 word-break 不支持 break-word（映射为 normal），需改用 break-all 或 accept normal 行为"
+    - "Skyline 下 text-overflow:ellipsis 必须在同一元素上同时设置 overflow:hidden + white-space:nowrap"
+    - "Skyline 下 view 组件不支持 text-overflow:ellipsis，需用 overflow:hidden 防止可见溢出，或改用 text 组件"
+  evidence:
+    - type: "code_signal"
+      description: "productName style 缺少 overflow:hidden，wordBreak:break-word 在 Skyline 映射为 normal"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/style.ts"
+      snippet: "productName: { ... wordBreak: 'break-word' }"
+    - type: "code_signal"
+      description: "descText style 有 textOverflow:ellipsis 但缺少 overflow:hidden 和 whiteSpace:nowrap"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/PackageDesc/DescMeasure/style.ts"
+      snippet: "descText: { textOverflow: 'ellipsis', ... }"
+    - type: "code_signal"
+      description: "overflow/whiteSpace 在父 view (desc) 上而非 text 元素上，Skyline 下不生效"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/PackageDesc/DescMeasure/style.ts"
+      snippet: "desc: { overflow: 'hidden', whiteSpace: 'nowrap' }"
+    - type: "code_signal"
+      description: "roomNameText 缺少 overflow:hidden，文字在 view 组件中渲染无法使用 text-overflow:ellipsis"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/FlatSaleRoomName/style.ts"
+      snippet: "roomNameText: { ... wordBreak: 'break-all' }"
+component_retrieval:
+  search_queries: []
+  candidate_components:
+    - name: "HotelProduct/style.ts"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/style.ts"
+      role: "confirmed_source"
+      confidence: "high"
+      evidence:
+        code_signal: true
+      reason: "productName style 缺少 overflow:hidden，wordBreak:break-word 在 Skyline 被映射为 normal"
+    - name: "DescMeasure/style.ts"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/PackageDesc/DescMeasure/style.ts"
+      role: "confirmed_source"
+      confidence: "high"
+      evidence:
+        code_signal: true
+      reason: "descText 有 textOverflow:ellipsis 但缺少 overflow:hidden 和 whiteSpace:nowrap"
+    - name: "Title/index.tsx"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/Title/index.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        code_signal: true
+      reason: "使用 numberOfLines={2} 但父 style 缺少 overflow:hidden 配合"
+    - name: "FlatSaleRoomName/style.ts"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/FlatSaleRoomName/style.ts"
+      role: "confirmed_source"
+      confidence: "high"
+      evidence:
+        code_signal: true
+      reason: "roomNameText 缺少 overflow:hidden，文字在 view 组件中渲染，Skyline 下 text-overflow:ellipsis 不生效"
+  rejected_components: []
+  confirmed_component: "HotelProduct + FlatSaleRoomName"
+  reviewed: true
+  status: "ready_for_fix"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/style.ts"
+    - "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/PackageDesc/DescMeasure/style.ts"
+  evidence:
+    - type: "code_signal"
+      description: "productName 缺少 overflow:hidden"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/style.ts"
+    - type: "code_signal"
+      description: "descText 缺少 overflow:hidden + whiteSpace:nowrap"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/PackageDesc/DescMeasure/style.ts"
+  analysis:
+    fix_type: "add_props_to_style"
+    fix_summary: "productName 添加 overflow:hidden；descText 添加 overflow:hidden + whiteSpace:nowrap"
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+fix:
+  approach: >
+    1. HotelProduct/style.ts: productName style 添加 overflow:'hidden'，与 numberOfLines={2} 配合截断
+    2. DescMeasure/style.ts: descText style 添加 overflow:'hidden' + whiteSpace:'nowrap'，
+       与已有的 textOverflow:'ellipsis' 配合实现单行打点。Skyline 下这三个属性必须在同一元素上。
+    3. FlatSaleRoomName/style.ts: roomNameText style 添加 overflow:'hidden'，
+       防止文字在 view 组件中最后一行可见溢出。wordBreak:'break-all' 已支持不需改动。
+  changed_files:
+    - "HotelProduct/style.ts (productName: add overflow:hidden)"
+    - "HotelProduct/PackageDesc/DescMeasure/style.ts (descText: add overflow:hidden + whiteSpace:nowrap)"
+    - "FlatSaleRoomName/style.ts (roomNameText: add overflow:hidden)"
+verification:
+  checklist:
+    - "Skyline 下标题文字在 2 行内截断，不溢出容器"
+    - "Skyline 下明细项超长时显示 ellipsis 打点"
+    - "Skyline 下钟点房房型名称最后一行不溢出容器"
+    - "H5 端回归验证（overflow:hidden + whiteSpace:nowrap 不影响 WebView 表现）"
+    - "iOS / Android 双端真机验证"
+    - "AB 回退验证"
+    - "非微信端回归（H5/CRN 不受影响）"
+  result: "pending"
+  devices: []
+  notes: "HotelProduct/DescMeasure 修复已应用（overflow:hidden + whiteSpace:nowrap）；FlatSaleRoomName 修复已应用（overflow:hidden），待真机验证"
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+uncertainty:
+  why_might_be_wrong:
+    - "numberOfLines={2} 在 Skyline 下可能另有兼容问题需要 XText 组件属性配合"
+    - "CRN 端 whiteSpace:nowrap 可能有不同行为"
+  missing_evidence:
+    - "真机验证截图/视频"

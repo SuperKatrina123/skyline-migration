@@ -24,7 +24,9 @@
 | `float` | 1 | ❌ 不支持 | 改用 flex + marginLeft:auto | P0 |
 | `white-space:pre/pre-wrap/pre-line` | 6 | ❌ 只支持 normal/nowrap | 数据层处理换行，或 text 组件 | P1 |
 | `overflow-wrap:break-word` | 3 | ❌ 不支持 | 改用 `word-break:break-all` | P1 |
-| `text-overflow:ellipsis` 在 view 上 | 25 | ⚠️ 仅 text 组件生效 | `<text overflow="ellipsis" max-lines="N">` | P2 |
+| `text-overflow:ellipsis` | 多处 | ⚠️ 需在 text 组件上同元素设 overflow:hidden + white-space:nowrap | text 组件同时设三个属性；`word-break:break-word` 映射为 normal | P1 |
+| flex column + `alignItems:flex-start` 文字不继承宽度 | 多处 | ⚠️ 子元素不自动继承容器宽度 | 文字元素加 `alignSelf: 'stretch'` 或父容器设 `width: '100%'` | P1 |
+| absolute 元素 shrink-to-fit | 1 | ❌ 不支持内容撑开宽度 | JS 动态计算宽度 | P1 |
 | `background-clip` | 1 | ❌ 不支持 | 嵌套元素模拟 | P2 |
 | `backdrop-filter` 多 function | 1 | ⚠️ 不支持组合/drop-shadow/url | 降级为单 function 或半透明背景 | P2 |
 | `em` 单位 | 待扫描 | ❌ 不支持 | 改 rpx/px/rem | P1 |

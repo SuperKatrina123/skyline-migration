@@ -1,0 +1,74 @@
+id: "skyline-issue-018"
+status: "draft"
+title: "FlatSaleRoomCard 横栏激励场景圆角未生效 — roomBasicBox margin..."
+inputs:
+  raw_description: "FlatSaleRoomCard 横栏激励场景圆角未生效 — roomBasicBox marginTop:-37 溢出 flatSaleRoomCard 的 borderRadius:16"
+  page_hint: "FlatSaleRoomCard"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots:
+      - "issues/assets/skyline-issue-018-border-radius.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "FlatSaleRoomCard"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "FlatSaleRoomCard 横栏激励场景圆角未生效 — roomBasicBox marginTop:-37 溢出 flatSaleRoomCard 的 borderRadius:16"
+  before_behavior: ""
+  after_behavior: ""
+  reproduce_steps: []
+visual_context:
+  source: "none"
+  affected_area: ""
+  visible_text: []
+  visual_component_types: []
+  observed_symptoms: []
+  inferred_risk_types: []
+  confidence: "none"
+risk:
+  types: []
+  level: "unknown"
+  suspected_keywords: []
+knowledge:
+  queries:
+    - "Skyline FlatSaleRoomCard 横栏激励场景圆角未生效 — roomBasicBox marginTop:-37 溢出 flatSaleRoomCard 的 borderRadius:16"
+    - "FlatSaleRoomCard Skyline 迁移"
+  matched_docs: []
+  matched_rules: []
+component_retrieval:
+  search_queries: []
+  candidate_components: []
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "pending"
+code_context:
+  suspected_files: []
+  suspected_components: []
+  evidence: []
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+verification:
+  checklist: []
+  result: "pending"
+  devices: []
+  notes: ""
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+uncertainty:
+  why_might_be_wrong: []
+  missing_evidence: []

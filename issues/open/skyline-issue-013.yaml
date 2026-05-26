@@ -60,8 +60,12 @@ knowledge:
     - doc: "skyline-components (view/button 完全支持 — 但 XViewExposure 的 onClick 在 Skyline 下转发行为未明确说明)"
   matched_rules: []
 analysis:
-  likely_root_cause: "|"
-  confidence: "low"
+  likely_root_cause: >
+    Swiper/index.mini.tsx 的 sync effect 使用 [currentImgVideoIndex, transitionEnabled] 作为依赖数组，
+    且内部有 !transitionEnabled 门控。onClickTab 中 transitionEnabled 被多处设为 false 产生冗余更新，
+    Skyline 下 atom 订阅 → 组件渲染的时序可能跳过 effect 执行，swiperIndex 未能及时同步，
+    导致 XSwiper 的 current prop 未更新，tab 点击不生效。去掉 transitionEnabled 门控即可。
+  confidence: "high"
   inferred_rules: []
   evidence:
     - type: "code_signal"
@@ -3461,9 +3465,9 @@ component_retrieval:
       - "import_relation"
       - "style_signal"
   rejected_components: []
-  confirmed_component: ""
-  reviewed: false
-  status: "ready_for_review"
+  confirmed_component: "Swiper/index.mini.tsx"
+  reviewed: true
+  status: "ready_for_fix"
 code_context:
   suspected_files:
     - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
@@ -3483,8 +3487,9 @@ claude_code:
   task_prompt: ""
   prompt_file: ""
 fix:
-  approach: "|"
-  changed_files: []
+  approach: "Swiper/index.mini.tsx sync effect 去掉 transitionEnabled 门控。swiperIndex 始终跟随 currentImgVideoIndex，不依赖 transitionEnabled 条件。用户滑动时 swiperIndex 已通过 onChange 对齐，setSwiperIndex(currentImgVideoIndex) 是 no-op，不影响滑动行为。"
+  changed_files:
+    - "Swiper/index.mini.tsx (line 57-62: 简化 useEffect 依赖，移除 transitionEnabled 门控)"
 verification:
   checklist:
     - "点击 tab 后 swiper 立即切换到对应分类"

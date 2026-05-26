@@ -98,9 +98,10 @@ claude_code:
   task_prompt: "add type=\"list\" prop to XScrollView at HighlightFloat/index.tsx:226"
   prompt_file: ""
 fix:
-  approach: "给 XScrollView 添加 type=\"list\" 属性，Skyline 下 scroll-view 必须指定 type"
+  approach: "给 XScrollView 添加 type=\"list\" 属性，Skyline 下加固定高度 (0.6 * WindowHeight) 固定滚动容器高度，仅 IS_MINI 生效"
   changed_files:
-    - "HighlightFloat/index.tsx (line 226: add type=\"list\")"
+    - "HighlightFloat/index.tsx (line 227: add type=\"list\")"
+    - "HighlightFloat/index.tsx (line 232: style 加 ...(IS_MINI ? { height: 0.6 * WindowHeight } : {}))"
 verification:
   checklist:
     - "亮点浮层内容可正常上下滚动"
