@@ -73,11 +73,11 @@
 
 具体见 [Issues 汇总](../issues/SUMMARY.md)
 
-| Issue | 优先级 | 阻塞内容 | 状态 |
-|-------|--------|----------|------|
-| #001 | P1 | absolute shrink-to-fit 不支持 | 需 JS 动态计算宽度 |
-| #005 | P0 | 筛选浮层不可见 | z-index fix 无效，疑似 FilterProvider 状态未更新，待排查 |
-| #003 | P2 | overflow:scroll 滚动条 | 证据不足，需 more search |
+| Issue | 现象 | 优先级 | 阻塞内容 | 状态 |
+|-------|------|--------|----------|------|
+| #001 | absolute 元素不能自动收缩包裹内容 | P1 | absolute shrink-to-fit 不支持 | 需 JS 动态计算宽度 |
+| #005 | 筛选浮层无法显示 | P0 | 筛选浮层不可见 | z-index fix 无效，疑似 FilterProvider 状态未更新，待排查 |
+| #003 | scroll-view 无滚动条 | P2 | overflow:scroll 滚动条 | 证据不足，需 more search |
 
 ---
 
