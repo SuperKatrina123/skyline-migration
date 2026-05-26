@@ -1,5 +1,5 @@
 id: "skyline-issue-004"
-status: "enriched"
+status: "closed"
 title: "订房优惠领券点击无法唤起浮层（XPoplayer 使用 wx.createAnimation）"
 inputs:
   raw_description: "订房优惠领券点击无法唤起浮层"
@@ -53,8 +53,9 @@ component_retrieval:
   search_queries:
     - "XPoplayer createAnimation"
     - "BannerFloat IdentityFloat PopLayer"
-  status: "ready_for_review"
-  reviewed: false
+  status: "confirmed"
+  reviewed: true
+  confirmed_component: "XPoplayer / PopLayer"
 candidate_components:
   - name: "XPoplayer"
     file: "dist/mini/.minicache/tarobaseproject/node_modules/@ctrip/xtaro-mini/component/XPoplayer/action.ts"
@@ -147,5 +148,20 @@ verification_checklist_draft:
   - "AB 回退验证"
   - "非微信端回归（H5/CRN 不受影响）"
 verification:
-  result: "pending"
-  notes: "需确认 xtaro-hxh-poplayer 是否有 Skyline 兼容版本"
+  result: "passed"
+  notes: "禁用 PopLayer/XPoplayer 内置动画（animationType='none'）+ CSS @keyframes 替代弹出动画，共 7 处引用全部修复。IdentityFloat 独立出 index.mini.tsx 做 mini 端专属处理。WebView 下动画通过 @keyframes 同样生效。"
+resolution:
+  root_cause: "XPoplayer/PopLayer 内部使用 Taro.createAnimation()（即 wx.createAnimation）驱动弹出动画，Skyline 不支持此 API 导致动画不执行，浮层停留在 translateY(windowHeight) 不可见"
+  fix_summary:
+    - "禁用 PopLayer/XPoplayer 内置动画（animationType='none'），消除对 wx.createAnimation 的依赖"
+    - "CSS @keyframes popLayerIn 实现浮层进入动画（translateY + opacity），双端兼容"
+    - "共 7 处 PopLayer/XPoplayer 引用统一应用此方案"
+    - "IdentityFloat 独立出 index.mini.tsx 管理 mini 端专属 PopLayer 配置"
+  changed_files:
+    - "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerFloat/IdentityFloat/index.mini.tsx（新增）"
+    - "src/pages/hoteldetail/detail/index.mini.scss（@keyframes + .pop-layer-animated 全局样式）"
+    - "其余 6 处 PopLayer/XPoplayer 引用 .tsx（animationType + className）"
+  reusable_rule: "Skyline 下禁用依赖 wx.createAnimation 的组件内置动画（animationType='none'），改用 CSS @keyframes 实现进入动画。方案双端兼容（WebView 也支持 @keyframes），但退出动画因 Skyline 不支持 animation-fill-mode 无法覆盖，需 setTimeout 延迟卸载组件。"
+case_output:
+  should_write_to_kb: true
+  target_file: "knowledge/cases/poplayer-css-animation.md"

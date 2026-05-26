@@ -1,0 +1,170 @@
+id: "skyline-issue-006"
+status: "closed"
+title: "货架价格浮层高度异常且缺少蒙层"
+inputs:
+  raw_description: "货架上的价格浮层高度看着不对，然后还缺少了蒙层"
+  page_hint: "酒店详情页"
+  mode: "skyline"
+  device: ""
+  attachments:
+    screenshots:
+      - "issues/assets/skyline-issue-006-price-layer-height-mask.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: "pages/hoteldetail/detail"
+  page_name: "酒店详情页"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "酒店详情页货架上的价格浮层（PriceLayer）高度显示异常（过短或比例不对），且缺少半透明蒙层（overlay/mask）。WebView 下正常。"
+  before_behavior: "WebView 下价格浮层高度正确，背景有半透明蒙层遮罩"
+  after_behavior: "Skyline 下价格浮层高度不正确，且无蒙层遮罩"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "向下滚动到货架区域"
+    - "点击房型价格，触发价格浮层显示"
+    - "观察：浮层高度异常（过短），缺少半透明蒙层"
+visual_context:
+  source: "screenshot"
+  affected_area: "货架区域价格浮层（高度 + 蒙层）"
+  root_cause_confidence: "unknown"
+risk:
+  types:
+    - "height"
+    - "mask"
+    - "popup"
+  level: "medium"
+  suspected_keywords:
+    - "WindowHeight"
+    - "SCREEN_HEIGHT"
+    - "xGetSystemInfoSync"
+    - "PopLayer"
+    - "XPoplayer"
+    - "遮罩"
+    - "蒙层"
+component_retrieval:
+  search_queries:
+    - "PriceLayerContainer"
+    - "PriceLayer"
+    - "PriceDetail"
+    - "XPoplayer"
+  candidate_components:
+    - name: "PriceLayerContainer"
+      file: "src/pages/hoteldetail/detail/components/PriceLayerContainer/index.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: true
+        text_match: false
+        import_relation: true
+        style_signal: false
+        code_signal: true
+        visual_match: true
+        name_match: true
+      reason: "PriceLayerContainer 渲染 PriceLayer 时未传递 isSkyline prop，导致 PriceLayer 无法启用 Skyline 兼容模式（animationType='none' 不生效）"
+      missing_evidence: []
+    - name: "PriceLayer"
+      file: "node_modules/@ctrip/xtaro-hotel-price-layer/component/PriceLayer/index.tsx"
+      role: "likely_source"
+      confidence: "high"
+      evidence:
+        route_match: true
+        text_match: false
+        import_relation: true
+        style_signal: true
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "PriceLayer 已内置 Skyline 兼容逻辑（isSkyline 控制 animationType 和 PriceDetail height），但 isSkyline 未被父级传入"
+      missing_evidence: []
+    - name: "PriceDetail"
+      file: "node_modules/@ctrip/xtaro-hotel-price-layer/component/PriceLayer/PriceDetail/index.tsx"
+      role: "indirect"
+      confidence: "medium"
+      evidence:
+        route_match: true
+        text_match: false
+        import_relation: true
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: false
+      reason: "PriceDetail 中 isSkyline 条件 height 设置（windowHeight * 0.6 - otherHeight）因 isSkyline 为 false 未生效"
+      missing_evidence: []
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "insufficient_code_evidence"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/PriceLayerContainer/index.tsx"
+    - "node_modules/@ctrip/xtaro-hotel-price-layer/component/PriceLayer/index.tsx"
+    - "node_modules/@ctrip/xtaro-hotel-price-layer/component/PriceLayer/PriceDetail/index.tsx"
+  evidence:
+    - type: "code"
+      level: 3
+      detail: "PriceLayerContainer/index.tsx 调用 PriceLayer 时未传 isSkyline prop（已修复 ✅，Line 139 补传）"
+    - type: "code"
+      level: 4
+      detail: "PriceLayer/index.tsx 使用 animationType={isSkyline ? 'none' : 'direction'}，isSkyline 为 false 时使用 wx.createAnimation（Skyline 不兼容）"
+    - type: "code"
+      level: 4
+      detail: "PriceDetail/index.tsx 有 isSkyline 条件 height 计算，但未被激活"
+    - type: "code"
+      level: 4
+      detail: "XPoplayer 蒙层渲染在 Skyline 下可能不工作（handleRollPenetration=true 可能抑制遮罩）"
+analysis:
+  likely_root_cause: "PriceLayerContainer 未传递 isSkyline prop 给 PriceLayer，导致 PriceLayer 使用默认 animationType='direction'（wx.createAnimation），Skyline 下动画不执行且布局异常。同时 PriceDetail 中的 Skyline 专用 height 计算也因 isSkyline 为 false 而未激活。"
+  confidence: "high"
+  fix_direction_hypothesis: |
+    PriceLayerContainer/index.tsx 中给 PriceLayer 添加 isSkyline prop（已修复 ✅）：
+    ```tsx
+    <PriceLayer
+        isSkyline
+        // ...existing props
+    >
+    ```
+    这将激活 PriceLayer 内部的 Skyline 兼容模式：animationType='none' + CSS @keyframes 替代 wx.createAnimation，以及 PriceDetail 中的 Skyline 专用 height 计算。
+    对于蒙层缺失问题，可能需要更深层排查 XPoplayer 在 Skyline 下的 mask 渲染行为。
+  open_questions:
+    - "添加 isSkyline 后 PriceLayer 的 CSS popLayerAnimate 动画是否生效？（已有 @keyframes fadeInDownContainer 定义）"
+    - "XPoplayer 的蒙层在 Skyline 下是否根本不可渲染？还是需要特殊的 z-index/position 设置？"
+    - "isSkyline 是硬编码还是需要通过 AB 实验 / renderer 检测动态传入？"
+    - "WebView 下回归验证是否正常？"
+  inferred_rules:
+    - "使用 XPoplayer/PopLayer 的组件在 Skyline 下需要设置 animationType='none' 并用 CSS @keyframes 替代内置动画"
+    - "调用方需要在渲染外部组件时传递渲染器类型（isSkyline 等）以确保子组件正确启用 Skyline 兼容模式"
+  impact_scope: |
+    影响酒店详情页货架价格浮层的高度显示和蒙层遮罩，属于视觉异常（非崩溃阻断）。修复范围限定在 PriceLayerContainer/index.tsx（传递 isSkyline prop）。
+verification:
+  checklist:
+    - "Skyline 下价格浮层高度正确"
+    - "蒙层（mask）正常显示"
+    - "浮层弹出动画正常"
+    - "WebView 下表现不变（isSkyline prop 被忽略）"
+  result: "passed"
+  devices:
+    - "模拟器"
+  notes: "用户编译验证通过，高度和蒙层均已正常"
+resolution:
+  root_cause: "PriceLayerContainer 渲染 PriceLayer 时未传递 isSkyline prop，导致 PriceLayer 在 Skyline 下使用了默认 animationType='direction'（依赖 wx.createAnimation），造成动画失败、高度计算异常、蒙层不渲染。"
+  fix_summary:
+    - "PriceLayerContainer/index.tsx:139 — 给 <PriceLayer> 添加 isSkyline prop，激活 PriceLayer 内部的 Skyline 兼容模式（animationType='none' + CSS @keyframes 替代 wx.createAnimation）"
+  changed_files:
+    - "src/pages/hoteldetail/detail/components/PriceLayerContainer/index.tsx"
+  reusable_rule: "使用 XPoplayer/PopLayer 的组件在 Skyline 下必须设置 animationType='none' 并用 CSS @keyframes 替代内置动画。调用外部包组件时，需传递渲染器类型（isSkyline prop）以启用内部 Skyline 兼容模式。"
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+uncertainty:
+  why_might_be_wrong:
+    - "未确定具体是哪个浮层组件"
+    - "未在真机验证，模拟器表现可能与真机不同"
+  missing_evidence:
+    - "需要确认具体组件名称和实现"
+    - "需要验证 xGetSystemInfoSync 在 Skyline 下是否返回正确的 screenHeight"

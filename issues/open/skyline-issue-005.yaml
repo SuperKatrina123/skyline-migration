@@ -1,0 +1,169 @@
+id: "skyline-issue-005"
+status: "enriched"
+title: "筛选浮层点击后不显示"
+inputs:
+  raw_description: "筛选浮层点击后不显示"
+  page_hint: "酒店详情页"
+  mode: "skyline"
+  device: ""
+  attachments:
+    screenshots:
+      - "issues/assets/skyline-issue-005-filter-layer.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: "pages/hoteldetail/detail"
+  page_name: "酒店详情页"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "酒店详情页点击筛选栏，筛选浮层（快速筛选弹层）不显示。WebView 下正常弹出。"
+  before_behavior: "WebView 下点击筛选栏按钮，筛选浮层以 position:absolute 定位在筛选栏下方弹出"
+  after_behavior: "Skyline 下点击筛选栏按钮，筛选浮层不可见（疑似被 PageContent 遮挡）"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "向下滚动页面使筛选栏可见"
+    - "点击筛选栏按钮"
+    - "观察：快速筛选浮层未出现"
+visual_context:
+  source: "screenshot"
+  affected_area: "筛选栏下方快速筛选浮层区域"
+  root_cause_confidence: "unknown"
+risk:
+  types:
+    - "z-index"
+    - "popup"
+  level: "high"
+  suspected_keywords:
+    - "z-index"
+    - "筛选"
+    - "浮层"
+    - "absolute"
+knowledge:
+  queries:
+    - "Skyline z-index 兄弟节点作用域"
+    - "FilterBarLayerContainer zIndex"
+    - "XHCQuickFilterLayer z-index"
+  matched_docs: []
+  matched_rules: []
+component_retrieval:
+  search_queries:
+    - "FilterBarLayerContainer"
+    - "FilterLayer"
+    - "XHCQuickFilterLayer"
+    - "z-index"
+  candidate_components:
+    - name: "FilterBarLayerContainer"
+      file: "src/pages/hoteldetail/detail/components/FilterBarLayerContainer/index.mini.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: true
+        text_match: true
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: true
+        name_match: true
+      reason: "筛选浮层的容器组件，外层 View 未设置 z-index，导致 Skyline 下内部 FilterLayer 的 z-index:1000 无法在 page 层级参与层叠"
+      missing_evidence: []
+    - name: "XHCQuickFilterLayer / FilterLayer"
+      file: "node_modules/@ctrip/xtaro-hotel-filter-component/component/filter-view/trip/filter-layer/index.mini.tsx"
+      role: "likely_source"
+      confidence: "high"
+      evidence:
+        route_match: true
+        text_match: false
+        import_relation: true
+        style_signal: true
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "内部 CSS 使用 position:absolute + z-index:1000（index.module.scss），但此 z-index 在 Skyline 下仅作用于 FilterLayer 内部兄弟节点，无法穿越 FilterBarLayerContainer 的 View 栈"
+      missing_evidence: []
+    - name: "DetailPage / __xtaro__root__"
+      file: "src/pages/hoteldetail/detail/components/DetailPage/index.mini.tsx"
+      role: "container_context"
+      confidence: "high"
+      evidence:
+        route_match: true
+        text_match: false
+        import_relation: true
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "FilterBarLayerContainer 是 __xtaro__root__ 的子节点，PageContent 等兄弟节点没有明确的 z-index，Skyline 下 z-index 仅兄弟生效导致内部绝对定位浮层无法正确叠放"
+      missing_evidence: []
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "insufficient_code_evidence"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/FilterBarLayerContainer/index.mini.tsx"
+    - "node_modules/@ctrip/xtaro-hotel-filter-component/component/filter-view/trip/filter-layer/index.module.scss"
+    - "src/pages/hoteldetail/detail/components/DetailPage/index.mini.tsx"
+  evidence:
+    - type: "code"
+      level: 3
+      detail: "FilterBarLayerContainer/index.mini.tsx 外层 View 加 position:relative + zIndex:9999 无效"
+    - type: "code"
+      level: 4
+      detail: "FilterLayer/index.module.scss: .layerMask { position: absolute; z-index: 1000; } — z-index 仅内部生效"
+    - type: "code"
+      level: 4
+      detail: "CFilterQuickLayerContainer/index.tsx: 基于 filterLayerCategory 条件渲染，category=None 返回 null"
+    - type: "code"
+      level: 3
+      detail: "console 无报错，疑似外部包 FilterProvider 内部状态未正确更新 filterLayerCategory"
+    - type: "fix_attempted"
+      level: 3
+      detail: "z-index fix + SCREEN_HEIGHT fallback 均无效"
+analysis:
+  likely_root_cause: "z-index 不是根因。加 position:relative + zIndex:9999 + SCREEN_HEIGHT fallback 后浮层仍不可见且无报错。疑似 CFfilterQuickLayerContainer 内部 filterLayerCategory 状态未被正确更新为 RoomFilter/SubFilter（返回 null 不渲染），或外部包 module-level getSystemInfoSync 导致 WINDOW_HEIGHT/SCREEN_HEIGHT 为 0，layerHeight 负数不可见。需 console 打桩或真机调试进一步排查。"
+  confidence: "low"
+  fix_direction_hypothesis: |
+    给 FilterBarLayerContainer/index.mini.tsx 的外层 View 添加 position:relative 和 zIndex（如 1000 或更高），使其在 __xtaro__root__ 层级参与兄弟 z-index 层叠。
+    ```tsx
+    <View style={{ position: 'relative', zIndex: 1000 }}>
+    ```
+  open_questions:
+    - "是否会影响其他已正常工作浮层的层叠顺序"
+    - "zIndex 取 1000 还是更高值"
+    - "此模式是否在 PriceLayerContainer 等同类组件也存在"
+  inferred_rules:
+    - "疑似 Skyline 下 z-index 仅作用于兄弟节点，嵌套在无 z-index 容器内的 position:absolute 元素需在父容器设置 z-index 才能在 page 层级参与层叠"
+  impact_scope: |
+    影响酒店详情页筛选功能，属于核心交互路径。修复范围限定在 FilterBarLayerContainer/index.mini.tsx。
+verification_checklist_draft:
+  - "Skyline 下点击筛选栏浮层正常弹出"
+  - "浮层内容可交互（筛选条件点选正常）"
+  - "浮层位置正确（在筛选栏下方）"
+  - "WebView 下浮层表现不变"
+  - "iOS / Android 双端验证"
+  - "AB 回退验证"
+  - "非微信端回归（H5/CRN 不受影响）"
+verification:
+  checklist: []
+  result: "pending"
+  devices: []
+  notes: ""
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+uncertainty:
+  why_might_be_wrong:
+    - "可能是 position:absolute 本身的布局问题而非纯 z-index 问题"
+    - "未在真机验证，模拟器表现可能与真机不同"
+  missing_evidence:
+    - "真机验证结果"
