@@ -1,0 +1,127 @@
+id: "skyline-issue-010"
+status: "enriched"
+title: "房型浮层图片角标(current/total)竖向排列 — XTextExposure 未编译为 text 组件，Skyline 下文本在 view 中默认 column 排列"
+inputs:
+  raw_description: "房型浮层（RoomListLayer）图片角标（如 '1/5'）竖向排列 — XTextExposure 在 Skyline 下未正确编译为 text 组件，文本内容落入 view 容器中"
+  page_hint: "RoomListLayer/PackageImage"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots: []
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "RoomListLayer"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "房型浮层底部图片角标（如 '1/5'）从横向排列变为竖向排列，各字符纵排显示"
+  before_behavior: "底部显示横向排列的 'current/total' 文字，如 '1/5'"
+  after_behavior: "文字变为竖向排列，1在上、/在中、5在下"
+  reproduce_steps:
+    - "进入酒店详情页"
+    - "点击房型浮层 trigger"
+    - "观察浮层底部图片角标文字排列方向"
+visual_context:
+  source: "user_report"
+  affected_area: "房型浮层底部图片角标（customerDotsText inside customerDots）"
+  visible_text:
+    - "1/5"
+  visual_component_types:
+    - "XTextExposure (counter badge)"
+  observed_symptoms:
+    - "竖向排列"
+  inferred_risk_types:
+    - "flex-direction"
+  confidence: "none"
+risk:
+  types:
+    - "flex"
+  level: "medium"
+  suspected_keywords:
+    - "XTextExposure"
+    - "Skyline text"
+    - "竖向排列"
+knowledge:
+  queries:
+    - "Skyline XTextExposure not compiling to text"
+    - "Skyline text inside view vertical layout"
+  matched_docs:
+    - "doc: skyline-components (text 组件 - 内联文本必须用 text 组件)"
+    - "doc: skyline-wxss (flex-direction 默认 column)"
+  matched_rules:
+    - "doc: skyline-components (MUST: 文本必须用 text 组件)"
+analysis:
+  likely_root_cause: "PackageImage 组件使用 XTextExposure 包裹角标文本，但 XTextExposure 在 Skyline 构建链路中未正确编译为 <text> 组件，文本内容直接落在外层 XView（customerDots）中。Skyline 下 view 默认 display:flex + flex-direction:column，导致文字竖向排列。"
+  confidence: "high"
+  inferred_rules:
+    - "Skyline 下优先使用 XText 而非 XTextExposure 渲染纯文本，确保编译为 <text> 组件"
+  evidence:
+    - type: "code_signal"
+      description: "XTextExposure 包裹角标文本，未编译为 text 组件"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PackageStayInfo/PackageImage/index.tsx"
+      snippet: "<XTextExposure className=\"customerDotsText\">{`${(currentPicIndex ?? 0) + 1}/${imageList.length}`}</XTextExposure>"
+component_retrieval:
+  search_queries: []
+  candidate_components:
+    - name: "PackageImage/index.tsx"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PackageStayInfo/PackageImage/index.tsx"
+      role: "confirmed_source"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "XTextExposure 包装角标文本，在 Skyline 下未正确编译为 text 组件"
+      missing_evidence: []
+  rejected_components:
+    - name: "HighlightFloat/PictureList"
+      role: "incorrectly_identified"
+      reason: "之前误判为亮点浮层的 imgNumContainer，实际问题在房型浮层"
+  confirmed_component: "PackageImage"
+  reviewed: true
+  status: "ready_for_fix"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PackageStayInfo/PackageImage/index.tsx"
+  suspected_components:
+    - "PackageImage (XTextExposure → 应为 XText)"
+  evidence:
+    - type: "code_signal"
+      description: "XTextExposure 在 Skyline 下未编译为 text 组件，文本落入 view"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PackageStayInfo/PackageImage/index.tsx"
+      snippet: "<XTextExposure className=\"customerDotsText\">"
+fix:
+  approach: "将 XTextExposure 替换为 XText，确保 Skyline 下正确编译为 <text> 组件。容器样式已有 flex-direction:row 无需改动。"
+  changed_files:
+    - "PackageImage/index.tsx (XTextExposure → XText)"
+verification:
+  checklist:
+    - "房型浮层图片角标横向排列（如 '1/5'）"
+    - "切换图片时角标数字更新且保持横向排列"
+    - "H5 端回归验证布局正常"
+  result: "pending"
+  devices: []
+  notes: "XTextExposure → XText 已修改，待真机验证"
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+  key_finding: ""
+uncertainty:
+  why_might_be_wrong:
+    - "未在真机上验证，XText 是否在 Skyline 下正确编译为 text 组件需确认"
+  missing_evidence:
+    - "真机验证截图"

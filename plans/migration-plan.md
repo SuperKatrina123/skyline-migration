@@ -52,16 +52,16 @@
 | 1a | 8 处 position:sticky → transform:translateY + transition（#007 PhysicalRoomCard + IncapableHeader） | 中 | 中 | ⚠️ 有影响（布局调整） | ✅ #007 已修复（transform:translateY + transition:0.02s 替代 position:fixed） |
 | 1b | 5 处 overflow:scroll/auto → scroll-view | 中 | 中 | ⚠️ 有影响（布局结构调整） | ❌ Issue #003 open，首次修复失败 |
 | 1c | 1 处 float → position:absolute 布局 | 低 | 小 | ⚠️ 有影响（布局改变） | ✅ 验证通过 |
-| 1d | ~10 处 scroll-view 加 type 属性 | 低 | 小 | ✅ 无影响 | ⏭️ 暂缓（无需 type 亦可工作） |
+| 1d | scroll-view 加 type 属性 | 低 | 小 | ✅ 无影响 | ⏳ 部分修复（#015 HighlightFloat XScrollView 已加 type="list"，其余待统一排查） |
 | **2 — 页面滚动体系迁移** | | | | | |
 | 2a | onScroll 使用 e.detail.scrollTop 替代 getBoundingClientRect | 高 | 中 | ⚠️ 有影响 | ✅ 已修复 |
 | 2b | scroll-view 添加 type="list" | 低 | 小 | ✅ 无影响 | ✅ 已修复 |
 | 2c | 模块测量改用 createSelectorQuery（xDOMUtils 在 Skyline 要求 node 有 id/class） | 中 | 小 | ⚠️ 有影响（测量逻辑改动） | ✅ 已验证 |
 | 2d | 清理 usePageScroll/mini 死代码 | 低 | 小 | ✅ 无影响 | ✅ 已修复 |
 | **3 — 文本样式** | | | | | |
-| 3a | white-space:pre/pre-wrap → 数据层处理或 text 组件 | 中 | 小 | ⚠️ 有影响 | 未开始 |
-| 3b | overflow-wrap:break-word → word-break:break-all | 低 | 小 | ✅ 无影响（行为接近） | 未开始 |
-| 3c | text-overflow:ellipsis 在 view 上 → `<text overflow="ellipsis" max-lines="N">` | 低 | 中 | ⚠️ 有影响（DOM 改动） | 未开始 |
+| 3a | white-space:pre/pre-wrap → 数据层处理或 text 组件 | 中 | 小 | ⚠️ 有影响 | ✅ 已修复 |
+| 3b | overflow-wrap:break-word → word-break:break-all | 低 | 小 | ✅ 无影响（行为接近） | ✅ 已修复 |
+| 3c | text-overflow:ellipsis 在 view 上 → `<text overflow="ellipsis" max-lines="N">` | 低 | 中 | ⚠️ 有影响（DOM 改动） | ✅ 已修复 |
 | 3d | 多段文本内联 → text/span 组件或 flex 布局 | 低 | 中 | ⚠️ 有影响 | 未开始 |
 | **4 — 验证** | | | | | |
 | 4a | position:fixed 浮层真机验证（z-index 仅兄弟节点生效） | 高 | 中 | ✅ 无影响（仅验证） | 未开始 |
@@ -78,6 +78,11 @@
 | #001 | absolute 元素不能自动收缩包裹内容 | P1 | absolute shrink-to-fit 不支持 | 需 JS 动态计算宽度 |
 | #005 | 筛选浮层无法显示 | P0 | 筛选浮层不可见 | z-index fix 无效，疑似 FilterProvider 状态未更新，待排查 |
 | #003 | scroll-view 无滚动条 | P2 | overflow:scroll 滚动条 | 证据不足，需 more search |
+| #011 | 整个页面经常卡死不动 | P0 | Skyline type=list 渲染阻塞 / 无限重绘 | draft / pending，待真机 profile |
+| #012 | 页面 tab 锚定依然不准确 | P1 | ScrollViewContext.scrollTo() 偏移量偏差 | 暂未修复 |
+| #013 | 首屏相册 tab 切换无效 | P0 | Skyline click 事件 / Swiper current prop 不同步 | enriched / ready_for_review，需真机确认调用链 |
+| #014 | scroll 滚动显隐 + 吸顶掉帧 | P1 | onScroll 逻辑线程 → setState re-render 帧率不足 | draft / pending，需 worklet 迁移 |
+| #015 | 首屏相册亮点浮层无法滚动 | P0 | XScrollView 缺少 type 属性 | enriched / ready_for_review，已加 type="list" 待验证 |
 
 ---
 

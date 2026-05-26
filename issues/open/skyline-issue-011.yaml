@@ -1,0 +1,140 @@
+id: "skyline-issue-011"
+status: "draft"
+title: "整个页面经常卡死不动 — Skyline 下疑似无限重绘或 type=list 渲染阻塞，页面无响应"
+inputs:
+  raw_description: "整个页面经常卡死不动 — Skyline 下疑似无限重绘或 type=list 渲染阻塞，页面无响应"
+  page_hint: "HotelDetail"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots: []
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "HotelDetail"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "Skyline 下整个酒店详情页频繁卡死无响应，疑似渲染线程阻塞或无限 re-render"
+  before_behavior: "WebView 下页面滚动流畅，可正常滑动和点击"
+  after_behavior: "页面在操作过程中（滚动/点击）随机卡死，无响应持续数秒或永久"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "上下滑动页面，点击 Tab 或房型卡片"
+    - "观察：页面随机卡死，无法滚动或点击"
+visual_context:
+  source: "user_report"
+  affected_area: "整个酒店详情页（PageContent 主 scroll-view 容器）"
+  visible_text: []
+  visual_component_types: []
+  observed_symptoms:
+    - "页面无响应"
+    - "滚动卡死"
+  inferred_risk_types:
+    - "performance"
+  confidence: "none"
+risk:
+  types:
+    - "performance"
+  level: "critical"
+  suspected_keywords:
+    - "type=list"
+    - "re-render"
+    - "freeze"
+knowledge:
+  queries:
+    - "Skyline type=list freeze"
+    - "Skyline scroll-view performance"
+  matched_docs: []
+  matched_rules: []
+analysis:
+  likely_root_cause: "暂无确定的根因。可能原因：(1) PageContent 的 XScrollView type='list' 在 Skyline 下渲染复杂内容（相册 + 房型列表 + 多模块）导致渲染线程阻塞；(2) onScroll 回调频繁触发 setScrollTop atom，导致依赖 scrollTop 的组件（如吸顶、显隐效果）在逻辑线程反复 re-render，阻塞逻辑线程；(3) ScrollViewContext.scrollTo() 或 createSelectorQuery 在 type='list' 中频繁调用可能导致死锁。需要更多信息（卡死时调试工具截图、vconsole 日志、复现频率）进一步定位。"
+  confidence: "low"
+  inferred_rules: []
+  evidence: []
+component_retrieval:
+  search_queries: []
+  candidate_components:
+    - name: "PageContent/index.mini.tsx"
+      file: "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "主页面 XScrollView type='list' 容器，onScroll → setScrollYRef + 可能触发 re-render"
+      missing_evidence:
+        - "route_match"
+    - name: "scrollAtom/index.ts"
+      file: "src/pages/hoteldetail/detail/atoms/scrollAtom/index.ts"
+      role: "contributor"
+      confidence: "medium"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "scrollTopAtom 被 onScroll 持续写入，可能触发依赖它的组件频繁 re-render"
+      missing_evidence:
+        - "route_match"
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "pending"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+    - "src/pages/hoteldetail/detail/components/PageContent/index.tsx"
+    - "src/pages/hoteldetail/detail/atoms/scrollAtom/index.ts"
+  suspected_components:
+    - "PageContent (主 scroll-view)"
+    - "scrollAtom (scrollTop atom)"
+  evidence:
+    - type: "code_signal"
+      description: "PageContent onScroll 持续更新 scrollYRef + setScrollTop，Skyline type=list 下可能导致 re-render 风暴"
+      file: "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+  analysis: {}
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+fix:
+  approach: "需要先进一步采集信息（卡死时机、vconsole 日志、复现路径），确认根因后再制定修复方案"
+  changed_files: []
+verification:
+  checklist:
+    - "Skyline 下页面滑动流畅不卡死"
+    - "长时间操作（滚动 + 点击 + Tab 切换）无卡死"
+    - "iOS / Android 双端验证"
+  result: "pending"
+  devices: []
+  notes: "需要更多信息才能制定修复方案"
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+  key_finding: ""
+uncertainty:
+  why_might_be_wrong:
+    - "根因完全不确定，可能是多种因素叠加"
+    - "卡死可能与环境/机型/数据量有关，非必现"
+  missing_evidence:
+    - "卡死时的 vconsole 日志"
+    - "复现频率和复现路径"
+    - "iOS/Android 差异"

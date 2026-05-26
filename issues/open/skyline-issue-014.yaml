@@ -1,0 +1,190 @@
+id: "skyline-issue-014"
+status: "draft"
+title: "scroll 滚动时显隐掉帧严重 + 物理房型卡片吸顶掉帧严重 — onScroll 逻辑线程回调驱动动画性能不足"
+inputs:
+  raw_description: |
+    Skyline 下两种情况掉帧严重：
+    1. 滚动时驱动的显隐效果（opacity 变化、元素显示/隐藏）掉帧
+    2. 物理房型卡片吸顶（transform:translateY + transition）掉帧
+  page_hint: "PhysicalRoomCard"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots: []
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "PhysicalRoomCard"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "滚动时驱动的显隐（opacity）动画和物理房型吸顶（transform:translateY）动画掉帧严重，滚动跟手性差"
+  before_behavior: "WebView 下滚动时显隐动画和吸顶效果流畅不掉帧"
+  after_behavior: "Skyline 下滚动时显隐 opacity 过渡卡顿、吸顶 transform 跳变，整体滚动跟手性明显下降"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "上下滑动页面"
+    - "观察：吸顶导航栏显隐效果卡顿，物理房型吸顶过程掉帧"
+visual_context:
+  source: "user_report"
+  affected_area: "吸顶导航栏显隐效果 + 物理房型卡片吸顶区域"
+  visible_text: []
+  visual_component_types:
+    - "IncapableHeader (吸顶)"
+    - "PhysicalRoomCard (物理房型吸顶)"
+  observed_symptoms:
+    - "显隐 opacity 过渡卡顿"
+    - "transform:translateY 吸顶跳变"
+    - "滚动不跟手"
+  inferred_risk_types:
+    - "performance"
+    - "scroll"
+  confidence: "none"
+risk:
+  types:
+    - "performance"
+    - "scroll"
+  level: "high"
+  suspected_keywords:
+    - "onScroll"
+    - "opacity"
+    - "translateY"
+    - "显隐"
+    - "吸顶"
+    - "setState"
+knowledge:
+  queries:
+    - "Skyline onScroll jank"
+    - "Skyline worklet scroll-driven animation"
+    - "Skyline transform performance"
+  matched_docs:
+    - "doc: skyline-worklet (onScroll 在逻辑线程，transform/opacity 动画应在 UI 线程通过 worklet 执行)"
+  matched_rules:
+    - "doc: skyline-wxss/references/animation.md (Skyline 下 onScroll 回调运行在逻辑线程，频繁触发 setState 会导致帧率下降)"
+analysis:
+  likely_root_cause: |
+    WebView 下 onScroll 回调虽然也在逻辑线程，但 WebView 使用原生滚动 + GPU 合成，opacity/transform 动画由合成器处理不影响主线程。Skyline 下：
+    1. 显隐效果由 onScroll → setPopHeaderOpacity/setState 驱动，每次滚动触发 setState → re-render → 逻辑线程阻塞 → 帧率下降
+    2. #007 修复的物理房型吸顶使用 transform:translateY + transition，transition 虽然由 GPU 处理，但触发时机（由 onScroll 计算出 translateY 值）仍在逻辑线程，导致更新延迟和跳变
+    3. Skyline 推荐使用 worklet（UI 线程）处理 scroll-driven 动画，当前实现完全依赖逻辑线程
+
+    需将 scroll-driven 动画迁移到 worklet 回调（Worklet 动画系统）。
+  confidence: "high"
+  inferred_rules:
+    - "Skyline 下 scroll-driven opacity/transform 动画应使用 worklet:onscrollupdate 在 UI 线程执行，而非 onScroll + setState"
+  evidence:
+    - type: "code_signal"
+      description: "popHeaderOpacity 通过 onScroll → setPopHeaderOpacity 驱动，每次 setState 导致 re-render"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.tsx"
+      snippet: "const [popHeaderOpacity, setPopHeaderOpacity] = useState(0); ... onScroll={handleOnScroll}"
+    - type: "code_signal"
+      description: "PhysicalRoomCard 吸顶使用 transform:translateY 由 onScroll 驱动（#007 修复），触发频率受逻辑线程限制"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+component_retrieval:
+  search_queries: []
+  candidate_components:
+    - name: "RoomListLayer/index.tsx"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "popHeaderOpacity 由 onScroll → setPopHeaderOpacity 驱动，每次 setState 导致 re-render，在 Skyline 逻辑线程下帧率下降"
+      missing_evidence: []
+    - name: "PhysicalRoomCard/index.tsx"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+      role: "likely_source"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "#007 修复的物理房型吸顶 transform:translateY + transition 依赖 onScroll 触发值更新，逻辑线程延迟导致掉帧"
+      missing_evidence: []
+    - name: "IncapableHeader"
+      file: "src/pages/hoteldetail/detail/components/ThirdScreen/IncapableHeader/index.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "吸顶导航栏显隐效果由 onScroll 驱动，在 Skyline 逻辑线程下掉帧"
+      missing_evidence: []
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "pending"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.tsx"
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+    - "src/pages/hoteldetail/detail/components/ThirdScreen/IncapableHeader/index.tsx"
+  suspected_components:
+    - "RoomListLayer (popHeaderOpacity)"
+    - "PhysicalRoomCard (transform:translateY 吸顶)"
+    - "IncapableHeader (吸顶导航栏显隐)"
+  evidence:
+    - type: "code_signal"
+      description: "popHeaderOpacity 通过 onScroll → setPopHeaderOpacity 驱动，Skyline 下应在 UI 线程通过 worklet 更新"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.tsx"
+      snippet: "const [popHeaderOpacity, setPopHeaderOpacity] = useState(0); const handleOnScroll = (e) => { setPopHeaderOpacity(...) }"
+    - type: "fix_applied"
+      description: "#007 已使用 transform:translateY + transition 替代 position:sticky，但驱动方式仍是逻辑线程 onScroll，性能不足"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+  analysis: {}
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+fix:
+  approach: |
+    将 scroll-driven 动画迁移到 Skyline worklet:onscrollupdate 回调（UI 线程执行）：
+    1. RoomListLayer: 使用 worklet 直接更新 popHeaderOpacity（opacity → style binding）
+    2. PhysicalRoomCard: 使用 worklet 直接更新 translateY 值（transform → style binding）
+    3. IncapableHeader: 使用 worklet 直接更新显隐 opacity
+    参考 skyline-worklet 技能实现。
+  changed_files: []
+verification:
+  checklist:
+    - "滚动时显隐 opacity 过渡流畅不掉帧"
+    - "物理房型吸顶 transform:translateY 平滑不掉帧"
+    - "WebView 下回归验证显隐和吸顶正常"
+    - "iOS / Android 双端验证"
+  result: "pending"
+  devices: []
+  notes: "依赖 Skyline worklet 动画系统，修复范围较大"
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+  key_finding: ""
+uncertainty:
+  why_might_be_wrong:
+    - "掉帧可能部分由页面卡死（#011）引起，而非独立问题"
+    - "worklet 迁移改造成本较高，需评估是否在 Batch 范围内"
+  missing_evidence:
+    - "具体帧率数据（Profile 工具截图）"
+    - "iOS/Android 掉帧程度差异"

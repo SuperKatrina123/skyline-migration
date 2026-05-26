@@ -1,0 +1,145 @@
+id: "skyline-issue-009"
+status: "closed"
+title: "房型浮层回退按钮和底部预订栏不可见（position:fixed 在 XScrollView 内失效）"
+inputs:
+  raw_description: "房型浮层回退按钮和底部预订栏不可见（position:fixed 在 XScrollView 内失效）"
+  page_hint: "RoomListLayer"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots:
+      - "assets/skyline-issue-009-room-layer-missing-backbutton-bottombar.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "RoomListLayer"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "房型浮层打开后，回退按钮（LayerHeader 内 BackButton）和底部预订栏（price-bottom-wrapper）均不可见"
+  before_behavior: "浮层打开时回退按钮固定在顶部、预订栏固定在底部"
+  after_behavior: "回退按钮和预订栏均不可见，初步判断因 position:fixed 在 XScrollView 内失效导致滚动时被遮盖或未渲染"
+  reproduce_steps:
+    - "进入酒店详情页"
+    - "点击房型浮层 trigger"
+    - "观察浮层顶部回退按钮和底部预订栏是否可见"
+visual_context:
+  source: "screenshot"
+  affected_area: "浮层头部回退按钮区域 + 底部预订栏区域"
+  visible_text: []
+  visual_component_types:
+    - "BackButton"
+    - "price-bottom-wrapper"
+    - "LayerHeader"
+  observed_symptoms:
+    - "回退按钮不可见"
+    - "底部预订栏不可见"
+  inferred_risk_types:
+    - "fixed-bottom"
+    - "scroll"
+  confidence: "none"
+risk:
+  types:
+    - "fixed-bottom"
+    - "scroll"
+  level: "high"
+  suspected_keywords:
+    - "fixed"
+    - "scroll-view"
+    - "ScrollView"
+    - "position"
+knowledge:
+  queries:
+    - "Skyline position:fixed inside scroll-view"
+    - "Skyline fixed-bottom 兼容性"
+    - "Skyline scroll-view position:fixed 失效"
+  matched_docs:
+    - doc: "skyline-wxss references/layout.md (position:fixed vs scroll-view)"
+  matched_rules:
+    - doc: "skyline-wxss (position:fixed supported but breaks inside scroll-view)"
+analysis:
+  likely_root_cause: "疑似 LayerHeader（回退按钮）和 price-bottom-wrapper（底部预订栏）使用了 position:fixed，但位于 XScrollView 内部。在 Skyline 中 scroll-view 内的 position:fixed 元素会随内容滚动而非相对于视口固定，导致按钮和预订栏不可见。"
+  confidence: "high"
+  inferred_rules:
+    - "Skyline 下 position:fixed 元素不能放在 scroll-view 内部，必须移到 scroll-view 外部"
+  evidence:
+    - type: "code_signal"
+      description: "LayerHeader 使用 position:fixed（LayerHeader/style.ts），且位于 XScrollView 内部"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/LayerHeader/style.ts"
+      snippet: "roomLayerHeaderWrapper: { position: 'fixed', ... }"
+    - type: "code_signal"
+      description: "price-bottom-wrapper 使用 position:fixed（index.scss），且位于 XScrollView 内部"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.scss"
+      snippet: ".price-bottom-wrapper { position: fixed; bottom: 0; ... }"
+component_retrieval:
+  search_queries: []
+  candidate_components:
+    - "RoomListLayer/index.tsx (主组件)"
+    - "RoomListLayer/index.scss (样式)"
+    - "RoomListLayer/components/LayerHeader/style.ts (头部样式)"
+  rejected_components: []
+  confirmed_component: "RoomListLayer"
+  reviewed: true
+  status: "ready_for_fix"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.tsx"
+    - "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.scss"
+    - "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/LayerHeader/style.ts"
+  suspected_components:
+    - "LayerHeader"
+    - "RoomListLayer"
+  evidence:
+    - type: "code_signal"
+      description: "LayerHeader 使用 position:fixed（LayerHeader/style.ts），且位于 XScrollView 内部"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/LayerHeader/style.ts"
+    - type: "code_signal"
+      description: "price-bottom-wrapper 使用 position:fixed（index.scss），且位于 XScrollView 内部"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.scss"
+claude_code:
+  task_prompt: "将 LayerHeader 和 price-bottom-wrapper 移到 XScrollView 外部，room_layer_wrapper 改用 flex 纵向布局"
+  prompt_file: ""
+fix:
+  approach: "|"
+  changed_files:
+    - "RoomListLayer/index.tsx"
+    - "RoomListLayer/index.scss"
+    - "RoomListLayer/components/LayerHeader/style.ts"
+verification:
+  checklist:
+    - "浮层打开时回退按钮可见且在顶部"
+    - "浮层打开时底部预订栏可见且在底部"
+    - "滚动浮层内容时回退按钮保持可见（不随内容滚动）"
+    - "滚动浮层内容时底部预订栏保持可见（不随内容滚动）"
+    - "浮层可正常关闭（回退按钮点击）"
+    - "底部预订栏按钮可正常点击"
+    - "H5 端浮层表现正常（回归）"
+  result: "passed"
+  devices: []
+  notes: "改动已应用到代码，等待用户验证"
+resolution:
+  root_cause: "LayerHeader（回退按钮）和 price-bottom-wrapper（底部预订栏）使用了 position:fixed，但位于 XScrollView 内部。WebView 下 position:fixed 相对于视口固定不受滚动影响，但 Skyline 下 scroll-view 内的 position:fixed 元素会随内容滚动，导致按钮和预订栏不可见。"
+  fix_summary:
+    - "将 LayerHeader 移到 XScrollView 外部（正常流顶部）"
+    - "将 price-bottom-wrapper 移到 XScrollView 外部（正常流底部）"
+    - "room_layer_wrapper 改用 display:flex; flex-direction:column 布局"
+    - "room_layer_section 改用 flex:1 填充中间空间"
+    - "移除 LayerHeader 的 position:fixed（改为 relative）"
+    - "移除 price-bottom-wrapper 的 position:fixed"
+  changed_files:
+    - "RoomListLayer/index.tsx"
+    - "RoomListLayer/index.scss"
+    - "RoomListLayer/components/LayerHeader/style.ts"
+  reusable_rule: "Skyline 下 position:fixed 元素不能放在 scroll-view 内部。如需在浮层中固定头部/底部，应将其移出 scroll-view 并用 flex 布局调整剩余滚动空间。"
+case_output:
+  should_write_to_kb: true
+  target_file: "knowledge/cases/skyline-issue-009.md"
+uncertainty:
+  why_might_be_wrong:
+    - "H5 端也需要回归验证，flex 布局可能与原有 position:absolute 表现有差异"
+  missing_evidence:
+    - "iOS/Android 双端真机验证"

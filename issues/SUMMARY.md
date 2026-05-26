@@ -7,6 +7,12 @@
 | 001 | AlbumTab scroll-view 宽度未撑开 | **P1** | absolute 元素 shrink-to-fit | 图片 gallery tab 栏 | enriched / ready_for_review |
 | 003 | 设施区域 scrollview 滚动条明显 | **P2** | `overflow: scroll`（疑似） | 设施推荐横向滚动 | enriched / insufficient_code_evidence |
 | 005 | 筛选浮层点击后不显示 | **P0** | Skyline z-index 兄弟节点作用域 | 筛选快速浮层 | enriched / insufficient_code_evidence |
+| 010 | 房型浮层图片角标竖向排列 | **P1** | XTextExposure 未编译为 text 组件，Skyline 默认 column | 房型浮层（PackageImage） | enriched / ready_for_review |
+| 011 | 整个页面经常卡死不动 | **P0** | Skyline type=list 渲染阻塞 / 无限重绘 | 全页（HotelDetail） | draft / pending |
+| 012 | 页面 tab 锚定依然不准确 | **P1** | ScrollViewContext.scrollTo() 偏移量偏差（#008 重开） | Tab 锚定（useScrollTo） | draft / pending |
+| 013 | 首屏相册 tab 切换无效 | **P0** | Skyline click 事件 / Swiper current prop 不同步 | 首屏相册（AlbumTab + Swiper） | enriched / ready_for_review |
+| 014 | scroll 滚动显隐 + 吸顶掉帧 | **P1** | onScroll 逻辑线程 → setState re-render 帧率不足 | 滚动全流程（RoomListLayer + PhysicalRoomCard） | draft / pending |
+| 015 | 首屏相册亮点浮层无法滚动 | **P0** | XScrollView 缺少 `type` 属性，Skyline 下 scroll-view 必须指定 type | 亮点浮层（HighlightFloat） | enriched / ready_for_review |
 
 ## Closed Issues
 
@@ -17,6 +23,7 @@
 | 006 | 货架价格浮层高度异常且缺少蒙层 | `wx.createAnimation`（PriceLayer 未传 isSkyline） | PriceLayerContainer 补传 `isSkyline` prop |
 | 007 | 物理房型吸顶失效 | `position: sticky` 不支持 | PhysicalRoomCard/IncapableHeader 改用 transform:translateY + transition:0.02s |
 | 008 | 页面 tab 锚定偏移 + 滚动范围异常 | Skyline type="list" scroll-top 定位不准 + 无 cache-extent | useScrollTo 改用 ScrollViewContext.scrollTo() + XScrollView 加 cacheExtent={2000} |
+| 009 | 房型浮层回退按钮 + 底部栏不可见 | `position: fixed` 在 XScrollView 内失效 | 将 LayerHeader 和 price-bottom-wrapper 移到 XScrollView 外部 + flex 布局 |
 
 ---
 
@@ -33,6 +40,8 @@
 | `wx.getSystemInfoSync` | deprecated 警告 | `wx.getWindowInfo()` | #004 |
 | `scroll-top` prop in type="list" | 程序化滚动定位不准，偏移量计算与实际渲染不符 | `ScrollViewContext.scrollTo()` | #008 |
 | type="list" 无 cache-extent | 只渲染可见节点，总内容高度估算偏小导致滚动范围异常 | 使用 `cache-extent` 预渲染 off-screen 内容 | #008 |
+| `position: fixed` 在 scroll-view 内 | 元素随内容滚动而非相对于视口固定 | 将元素移到 scroll-view 外部 + flex 布局 | #009 |
+| `display:flex` 缺少 `flexDirection` | 文字竖向排列（Skyline 默认 column） | 始终显式指定 `flexDirection: 'row'` | #010 |
 
 ---
 

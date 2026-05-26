@@ -1,0 +1,125 @@
+id: "skyline-issue-015"
+status: "enriched"
+title: "首屏相册亮点浮层无法滚动 — XScrollView 缺少 type 属性，Skyline 下 scroll-view 必须指定 type"
+inputs:
+  raw_description: "首屏相册亮点浮层无法滚动 — XScrollView 缺少 type 属性，Skyline 下 scroll-view 必须指定 type"
+  page_hint: "HighlightFloat"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots: []
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "HighlightFloat"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "亮点浮层弹出后，内容无法上下滚动，scroll-view 不响应滑动操作"
+  before_behavior: "WebView 下浮层内容可正常滚动"
+  after_behavior: "Skyline 下浮层内容卡住不动，无法滚动查看超出视口的内容"
+  reproduce_steps:
+    - "进入酒店详情页"
+    - "点击首屏相册的亮点入口"
+    - "亮点浮层弹出"
+    - "尝试上下滑动浮层内容"
+    - "观察：内容无法滚动"
+visual_context:
+  source: "user_report"
+  affected_area: "亮点浮层整个滚动区域"
+  visible_text: []
+  visual_component_types:
+    - "XScrollView"
+  observed_symptoms:
+    - "浮层内容无法滚动"
+  inferred_risk_types:
+    - "scroll"
+  confidence: "none"
+risk:
+  types:
+    - "scroll"
+  level: "high"
+  suspected_keywords:
+    - "scroll-view"
+    - "XScrollView"
+    - "type"
+knowledge:
+  queries:
+    - "Skyline scroll-view type attribute required"
+    - "Skyline XScrollView missing type"
+  matched_docs:
+    - doc: "skyline-components references/scroll/scroll-view.md (scroll-view 必须指定 type)"
+  matched_rules:
+    - doc: "skyline-components (MUST: scroll-view 必须指定 type)"
+analysis:
+  likely_root_cause: "HighlightFloat 组件第 226 行的 XScrollView 缺少 type 属性。Skyline 下 scroll-view 必须指定 type（'list'/'custom'/'nested'），否则不会处理滚动事件，内容无法滚动。WebView 无此要求所以表现正常。"
+  confidence: "high"
+  inferred_rules:
+    - "Skyline 下所有 XScrollView 必须指定 type 属性"
+  evidence:
+    - type: "code_signal"
+      description: "XScrollView 缺少 type 属性（第 226 行）"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/index.tsx"
+      snippet: "<XScrollView scrollY showScrollbar={false} ...>"
+    - type: "code_signal"
+      description: "对比其他已修复的 scroll-view 都添加了 type 属性"
+component_retrieval:
+  search_queries: []
+  candidate_components:
+    - name: "HighlightFloat/index.tsx"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/index.tsx"
+      role: "confirmed_source"
+      confidence: "high"
+      evidence:
+        code_signal: true
+      reason: "XScrollView (line 226) missing type prop"
+  rejected_components: []
+  confirmed_component: "HighlightFloat"
+  reviewed: true
+  status: "ready_for_fix"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/index.tsx"
+  suspected_components:
+    - "HighlightFloat"
+  evidence:
+    - type: "code_signal"
+      description: "XScrollView missing type attribute at line 226"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/index.tsx"
+      snippet: "<XScrollView scrollY showScrollbar={false} scrollWithAnimation={false} scrollTop={scrollTop} style={{ minHeight, maxHeight }}>"
+  analysis:
+    fix_type: "add_prop"
+    fix_summary: "Add type=\"list\" to XScrollView"
+claude_code:
+  task_prompt: "add type=\"list\" prop to XScrollView at HighlightFloat/index.tsx:226"
+  prompt_file: ""
+fix:
+  approach: "给 XScrollView 添加 type=\"list\" 属性，Skyline 下 scroll-view 必须指定 type"
+  changed_files:
+    - "HighlightFloat/index.tsx (line 226: add type=\"list\")"
+verification:
+  checklist:
+    - "亮点浮层内容可正常上下滚动"
+    - "滚动锚定（scrollTop）功能正常"
+    - "H5 端回归验证（type 属性不影响 WebView）"
+    - "iOS / Android 双端真机验证"
+  result: "pending"
+  devices: []
+  notes: "修复已应用，待验证"
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+uncertainty:
+  why_might_be_wrong:
+    - "scrollTop 锚定功能在 Skyline type=list 下可能仍有偏移问题（类似 #008）"
+  missing_evidence:
+    - "真机验证截图/视频"

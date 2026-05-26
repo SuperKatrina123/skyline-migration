@@ -1,0 +1,160 @@
+id: "skyline-issue-012"
+status: "draft"
+title: "页面 tab 锚定依然不准确 — ScrollViewContext.scrollTo() 偏移量计算偏差，重开 #008"
+inputs:
+  raw_description: |
+    #008 已应用修复（ScrollViewContext.scrollTo() + cacheExtent={2000}），但真机上 tab 锚定仍然偏移，未正确定位到吸顶栏下方。
+  page_hint: "HotelDetail"
+  mode: "mini"
+  device: ""
+  attachments:
+    screenshots: []
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "HotelDetail"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "#008 修复（ScrollViewContext.scrollTo() + cacheExtent={2000}）后真机验证 tab 锚定依然偏移，未正确定位到吸顶导航栏下方"
+  before_behavior: ""
+  after_behavior: "点击页面 Tab 后 scroll-view 滚动但目标模块未与吸顶栏对齐，仍有偏移"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "点击任意页面 Tab（如评论/亮点/设施）"
+    - "观察：页面滚动但目标模块未与吸顶栏对齐"
+visual_context:
+  source: "user_report"
+  affected_area: "XScrollView 滚动容器（PageContent 内 type='list' scroll-view）"
+  visible_text: []
+  visual_component_types: []
+  observed_symptoms:
+    - "锚定偏移"
+    - "scrollTo 定位不准"
+  inferred_risk_types:
+    - "scroll"
+  confidence: "none"
+risk:
+  types:
+    - "scroll"
+  level: "high"
+  suspected_keywords:
+    - "scrollTo"
+    - "ScrollViewContext"
+    - "offset"
+    - "boundingClientRect"
+knowledge:
+  queries:
+    - "Skyline ScrollViewContext.scrollTo offset issue"
+    - "Skyline boundingClientRect virtual list coordinate"
+  matched_docs:
+    - "doc: skyline-scroll-api (ScrollViewContext.scrollTo)"
+    - "doc: skyline-components/references/scroll/scroll-view.md (type=list virtual list)"
+  matched_rules: []
+analysis:
+  likely_root_cause: |
+    #008 修复代码（useScrollTo/index.mini.ts）使用 ResizeObserver 或 boundingClientRect 计算 offset，但 formula 在 Skyline type='list' 虚拟列表中可能有偏差：
+    1. boundingClientRect.top 在虚拟列表中可能返回相对于 scroll-view 内容区的偏移（而非视口），导致 +scrollY 后重复累加
+    2. stickyHeaderHeight 在 Skyline 下的实际渲染高度可能与 getBoundingClientRect 测量值不一致
+    3. cacheExtent={2000} 只能解决内容高度估算，不直接影响 scrollTo 坐标精度
+
+    当前计算逻辑：
+    ```
+    targetTop = res.top + scrollY - stickyHeaderHeight
+    ```
+    需要确认 Skyline 下 res.top 和 scrollY 的参考坐标系是否与 WebView 一致。
+  confidence: "medium"
+  inferred_rules:
+    - "Skyline type='list' 下 scrollTo 的 top 值可能需要额外修正偏移量"
+  evidence:
+    - type: "code_signal"
+      description: "useScrollTo 中使用 boundingClientRect.top + scrollY - offset 计算 targetTop，坐标系在 Skyline 虚拟列表中可能不一致"
+      file: "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.mini.ts"
+      snippet: "const targetTop = res.top + scrollY - (offset ?? 0)"
+component_retrieval:
+  search_queries: []
+  candidate_components:
+    - name: "useScrollTo/index.mini.ts"
+      file: "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.mini.ts"
+      role: "likely_source"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "scrollToModule 的 targetTop 计算逻辑，使用 boundingClientRect.top + scrollY - offset，坐标系可能需适配 Skyline"
+      missing_evidence: []
+    - name: "PageContent/index.mini.tsx"
+      file: "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "XScrollView 容器，cacheExtent={2000} 已设置但仍无法解决偏移"
+      missing_evidence: []
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "pending"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.mini.ts"
+    - "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+    - "src/pages/hoteldetail/detail/atoms/scrollAtom/index.ts"
+  suspected_components:
+    - "useScrollTo - scrollToModule targetTop 计算"
+    - "PageContent - XScrollView 容器"
+  evidence:
+    - type: "code_signal"
+      description: "useScrollTo boundingClientRect.top + scrollY - offset 坐标系可能不兼容 Skyline type='list'"
+      file: "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.mini.ts"
+      snippet: "const targetTop = res.top + scrollY - (offset ?? 0)"
+  analysis: {}
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+fix:
+  approach: |
+    1. 在 Skyline 环境下使用 ScrollViewContext.scrollTo() 时，可尝试直接用 boundingClientRect 返回的 top（不 + scrollY）
+    2. 或使用 ResizeObserver 获取模块精确位置
+    3. 检查 stickyHeaderHeight 在 Skyline 下的实际高度
+  changed_files: []
+verification:
+  checklist:
+    - "Skyline 下点击 Tab 精准锚定到目标模块上方吸顶导航栏处"
+    - "WebView 下 tab 锚定行为不变（回归）"
+    - "iOS / Android 双端验证"
+  result: "pending"
+  devices: []
+  notes: "#008 修复已应用但问题依旧，需进一步调优 targetTop 计算"
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+  key_finding: ""
+uncertainty:
+  why_might_be_wrong:
+    - "偏移可能不是坐标系问题，而是 stickyHeaderHeight 在 Skyline 下渲染高度不同"
+    - "cacheExtent 值可能不够大"
+  missing_evidence:
+    - "真机上 stickyHeaderHeight 的实际值"
+    - "boundingClientRect.top 在 Skyline type='list' 下的参考坐标系"

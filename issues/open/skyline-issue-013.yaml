@@ -1,0 +1,3512 @@
+id: "skyline-issue-013"
+status: "enriched"
+title: "首屏相册点击 tab 切换无效 — iPhone 16 Pro 视频正常播放但 image/video tab 点击无响应"
+inputs:
+  raw_description: "|"
+  page_hint: "Album"
+  mode: "mini"
+  device: "iPhone 16 Pro"
+  attachments:
+    screenshots: []
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "Album"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "iPhone 16 Pro 真机上首屏相册 tab（图片/视频分类）点击后 swiper 无响应，但视频可正常播放"
+  before_behavior: "点击 tab 后 swiper 立即切换到对应分类的图片/视频"
+  after_behavior: "点击 tab 无任何反应，swiper 停留在当前项"
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "在首屏相册区域中点击不同分类 tab（如从'图片'切换到'视频'）"
+    - "观察：swiper 未切换，仍显示当前内容"
+    - "确认：视频可正常播放"
+visual_context:
+  source: "user_report"
+  affected_area: "首屏相册 AlbumTab + Swiper 交互"
+  visible_text: []
+  visual_component_types:
+    - "AlbumTab"
+    - "XSwiper"
+  observed_symptoms:
+    - "tab 点击无响应"
+    - "swiper 不切换"
+  inferred_risk_types:
+    - "click"
+    - "swiper"
+  confidence: "none"
+risk:
+  types:
+    - "swiper"
+    - "click"
+  level: "high"
+  suspected_keywords:
+    - "tab"
+    - "Swiper"
+    - "onClick"
+    - "iPhone 16 Pro"
+knowledge:
+  queries:
+    - "Skyline swiper onClick not working"
+    - "Skyline click event not firing on iPhone"
+  matched_docs:
+    - doc: "skyline-components (view/button 完全支持 — 但 XViewExposure 的 onClick 在 Skyline 下转发行为未明确说明)"
+  matched_rules: []
+analysis:
+  likely_root_cause: "|"
+  confidence: "low"
+  inferred_rules: []
+  evidence:
+    - type: "code_signal"
+      description: "AlbumTab onClickTabItem → onClickTab 调用链涉及 setCurrentTabIndex + updateCurrentIndex + setTransitionEnabled，Skyline 下 Swiper 可能未及时响应当前索引变化"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
+      snippet: "onClick={() => onClickTabItem(index, categoryName)}"
+component_retrieval:
+  search_queries:
+    - "swiper"
+    - "Swiper"
+    - "SwiperItem"
+  candidate_components:
+    - name: "AlbumTab (Tab/index.tsx)"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "AlbumTab 的 onClickTabItem → onClickTab 调用链，tab 点击事件的入口"
+      missing_evidence: []
+    - name: "Swiper/index.mini.tsx"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/Swiper/index.mini.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "小程序端 Swiper 容器，swiperIndex 是 local state 由 setSwiperIndex 更新，可能未及时响应 tab 切换"
+      missing_evidence: []
+    - name: "useImmersiveHeadActions/index.ts"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/hooks/useImmersiveHeadActions/index.ts"
+      role: "likely_source"
+      confidence: "high"
+      evidence:
+        route_match: false
+        text_match: false
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "onClickTab 负责更新 tabIndex atom、currentImgIndex atom、transitionEnabled，链路较长可能在 Skyline 下有延迟"
+      missing_evidence: []
+    - name: "Button"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/GroupArticle/components/Button/index.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useHotelRoomBedInfoLogic"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/HotelRoomBedInfo/useHotelRoomBedInfoLogic.ts"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HeadVideo"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/AlbumList/HeadVideo/index.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "SwiperMore"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/AlbumList/SwiperMore/index.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "包含描述中的关键文案，代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "AlbumList"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/AlbumList/index.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ImageFlywheel"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/ImageFlywheel/index.tsx"
+      role: "unknown"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useAlbumList"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/PagerView/useAlbumList.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Swiper"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/Swiper/index.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "包含描述中的关键文案，代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Album"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/index.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Tab"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useImageGallery"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/hooks/useImageGallery/index.ts"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useImmersiveHeadActions"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/hooks/useImmersiveHeadActions/index.ts"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ImmersiveHead"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/index.tsx"
+      role: "unknown"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "container.h5"
+      file: "src/pages/hoteldetail/detail/container.h5.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "container"
+      file: "src/pages/hoteldetail/detail/container.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "detail"
+      file: "src/pages/hoteldetail/detail/detail.tsx"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "enum"
+      file: "src/pages/hoteldetail/detail/utils/action/goToAlbumPage/enum.ts"
+      role: "unknown"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "goToAlbumPage"
+      file: "src/pages/hoteldetail/detail/utils/action/goToAlbumPage/index.ts"
+      role: "unknown"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "mobileConfig"
+      file: "src/pages/hoteldetail/detail/utils/mobileConfig/index.ts"
+      role: "unknown"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useHotelAlbumPageInfoData"
+      file: "src/pages/hoteldetail/services/getHotelAlbumPageInfo/useHotelAlbumPageInfoData.ts"
+      role: "likely_source"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案，代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "getAlbumPageInfoRequestParam"
+      file: "src/pages/hoteldetail/services/getHotelAlbumPageInfo/utils/getAlbumPageInfoRequestParam.ts"
+      role: "unknown"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "whiteList"
+      file: "src/pages/hoteldetail/shared/autoui/whiteList.ts"
+      role: "unknown"
+      confidence: "medium"
+      evidence:
+      route_match: false
+      text_match: true
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: false
+      reason: "包含描述中的关键文案。"
+      missing_evidence:
+      - "route_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "hooks"
+      file: "src/pages/hoteldetail/detail/atoms/baseModelAtom/hooks.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "immersiveHeadAtom"
+      file: "src/pages/hoteldetail/detail/atoms/immersiveHeadAtom/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "index.crn"
+      file: "src/pages/hoteldetail/detail/atoms/scrollAtom/hooks/useScrollEnable/index.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "index.h5"
+      file: "src/pages/hoteldetail/detail/atoms/scrollAtom/hooks/useScrollEnable/index.h5.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useXagentAutoScroll"
+      file: "src/pages/hoteldetail/detail/components/AISearchSummary/useXagentAutoScroll.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "index.mini"
+      file: "src/pages/hoteldetail/detail/components/BaseLib/index.mini.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useCommonTrace"
+      file: "src/pages/hoteldetail/detail/components/BlankModule/useCommonTrace/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useBottomBarAnimation.crn"
+      file: "src/pages/hoteldetail/detail/components/BottomBar/hooks/useBottomBarAnimation.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useBottomBarScrollListener.crn"
+      file: "src/pages/hoteldetail/detail/components/BottomBar/hooks/useBottomBarScrollListener.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "CalendarCore"
+      file: "src/pages/hoteldetail/detail/components/Calendar/components/CalendarCore/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "CalendarToast"
+      file: "src/pages/hoteldetail/detail/components/Calendar/components/CalendarToast/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RoomsAndGuestsLayer"
+      file: "src/pages/hoteldetail/detail/components/Calendar/components/RoomsAndGuestsLayer/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useCalendar"
+      file: "src/pages/hoteldetail/detail/components/Calendar/hooks/useCalendar.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useCalendarStorage"
+      file: "src/pages/hoteldetail/detail/components/Calendar/hooks/useCalendarStorage.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useCalendarTip"
+      file: "src/pages/hoteldetail/detail/components/Calendar/hooks/useCalendarTip.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useRoomsGuests"
+      file: "src/pages/hoteldetail/detail/components/Calendar/hooks/useRoomsGuests.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Calendar"
+      file: "src/pages/hoteldetail/detail/components/Calendar/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "interface"
+      file: "src/pages/hoteldetail/detail/components/Calendar/interface.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "utils"
+      file: "src/pages/hoteldetail/detail/components/Calendar/utils/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "CommonVideo"
+      file: "src/pages/hoteldetail/detail/components/CommonVideo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "hook.crn"
+      file: "src/pages/hoteldetail/detail/components/DetailHead/NavBar/FavoriteButton/event/hook.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "FavoriteButton"
+      file: "src/pages/hoteldetail/detail/components/DetailHead/NavBar/FavoriteButton/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ShareButton"
+      file: "src/pages/hoteldetail/detail/components/DetailHead/NavBar/ShareButton/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "LottieTab"
+      file: "src/pages/hoteldetail/detail/components/DetailHead/TabList/LottieTab/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "TabItem"
+      file: "src/pages/hoteldetail/detail/components/DetailHead/TabList/TabItem/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "hooks.crn"
+      file: "src/pages/hoteldetail/detail/components/DetailPage/hooks.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "DetailPage"
+      file: "src/pages/hoteldetail/detail/components/DetailPage/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "QuickFilterBroadcaster.mini"
+      file: "src/pages/hoteldetail/detail/components/DetailPageWithProvider/QuickFilterBroadcaster.mini.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "urlQuery"
+      file: "src/pages/hoteldetail/detail/components/DetailProvider/utils/urlQuery/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ExtendStayStaticInfoWrapper"
+      file: "src/pages/hoteldetail/detail/components/ExtendStayPage/components/ExtendStayStaticInfoWrapper/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useWaitEventOrTimeout"
+      file: "src/pages/hoteldetail/detail/components/LoginBar/hooks/useWaitEventOrTimeout.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ModifyOrderInfo"
+      file: "src/pages/hoteldetail/detail/components/ModifyOrderPage/components/ModifyOrderInfo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ModifyOrderStaticInfoWrapper"
+      file: "src/pages/hoteldetail/detail/components/ModifyOrderPage/components/ModifyOrderStaticInfoWrapper/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "usePIPDraggable"
+      file: "src/pages/hoteldetail/detail/components/PictureInPicture/usePIPDraggable.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "usePIPLifeCycle"
+      file: "src/pages/hoteldetail/detail/components/PictureInPicture/usePIPLifeCycle.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useFreezeBody.h5"
+      file: "src/pages/hoteldetail/detail/components/Popup/hooks/useFreezeBody.h5.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PriceLayerContainer"
+      file: "src/pages/hoteldetail/detail/components/PriceLayerContainer/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RealNameAuthDialog"
+      file: "src/pages/hoteldetail/detail/components/RealNameAuthDialog/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "service"
+      file: "src/pages/hoteldetail/detail/components/RealNameAuthDialog/service.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "atom"
+      file: "src/pages/hoteldetail/detail/components/RoomList/HotelRoomList/common/roomListProvider/atom.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "roomListProvider"
+      file: "src/pages/hoteldetail/detail/components/RoomList/HotelRoomList/common/roomListProvider/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "htlReservatio.interface"
+      file: "src/pages/hoteldetail/detail/components/RoomList/HotelRoomList/common/roomListProvider/utils/htlReservatio.interface.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useRoomCouponActionHandler"
+      file: "src/pages/hoteldetail/detail/components/RoomList/HotelRoomList/hooks/useRoomCouponActionHandler.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PackageDesc"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/PackageDesc/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PriceDetail"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/PriceDetail/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ReservationNoteInfo"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/ReservationNoteInfo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "CancelTimeLine"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/RoomPolicyInfo/CancelPolicy/CancelTimeLine/index.scss"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RenderTable"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/RoomPolicyInfo/RenderTable/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BottomBanner"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/BottomBanner/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ImageSwiper"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/ImageSwiper/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PackageImage"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PackageStayInfo/PackageImage/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PackageStayInfo"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PackageStayInfo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "style"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PackageStayInfo/style.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PopBanner"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/PopBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Video"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/Video/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "StayInfo"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/components/StayInfo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RoomListLayer"
+      file: "src/pages/hoteldetail/detail/components/RoomList/RoomListLayer/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ScrollBoundary"
+      file: "src/pages/hoteldetail/detail/components/ScrollBoundary/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ScrollViewStickyHeader"
+      file: "src/pages/hoteldetail/detail/components/ScrollViewStickyHeader.js"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Comment"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/Comment.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ArticleListItem"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/GroupArticle/components/ArticleList/ArticleListItem/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "style.crn"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/GroupArticle/components/ArticleList/ArticleListItem/style.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ArticleList"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/GroupArticle/components/ArticleList/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HighlightVideo"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/Highlight/HighlightCard/Child/HighlightVideo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "usePageHide"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/Highlight/HighlightCard/Child/HighlightVideo/usePageHide.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Highlight"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/Highlight/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HotelHost"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/HotelHost/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PlanetFlagship"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/PlanetFlagship/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "gotoMap.h5"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/PoiInfo/gotoMap.h5.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ReservationTipAndPolicy"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/ReservationTipAndPolicy/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "URSComponent"
+      file: "src/pages/hoteldetail/detail/components/SecondScreen/URSComponent/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ExtendRoomBanner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/ExtendRoomBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "GamingPrivilegeFloat"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerFloat/GamingPrivilegeFloat/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PrivilegeCard"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerFloat/IdentityFloat/IdentityFloatBody/PrivilegeCard/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "IdentityFloat"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerFloat/IdentityFloat/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BannerFloat"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerFloat/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "service.mini"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerFloat/service.mini.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "AtmosphereBanner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/AtmosphereBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BannerCouponTag"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/BenefitBanner/BannerCouponTag/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BannerIdentityTag"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/BenefitBanner/BannerIdentityTag/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BannerRightButton"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/BenefitBanner/BannerRightButton/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BenefitBanner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/BenefitBanner/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BenefitBannerV2"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/BenefitBannerV2/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "EmergencyBanner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/EmergencyBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "GameBanner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/GameBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "StarPlanetBanner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/BannerList/StarPlanetBanner/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "CouponPopup"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/CouponPopup/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "MarketingBanner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "manager"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/MarketingBanner/manager.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "Banner"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/Banner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HeadImage"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/AlbumList/HeadImage/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "CommentModule"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/ImageFlywheel/CommentModule/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ImageMapPoiCard"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/ImageFlywheel/MapModule/ImageMapPoiCard/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "MapModule"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/ImageFlywheel/MapModule/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "TravelPhoto"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/ImageFlywheel/TravelPhoto/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PagerView"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/PagerView/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "SwiperItem"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/Swiper/SwiperItem/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "BackgroundCover"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/BackgroundCover/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HighlightImage"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/PictureList/HighlightImage/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PictureList"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/PictureList/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HighlightFloat"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "servive"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/HighlightFloat/servive.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "highlightAtoms"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/atoms/highlightAtoms.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "atoms"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/atoms/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "videoAtoms"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/atoms/videoAtoms.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useCarousel"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/hooks/useCarousel/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useScrollTab"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/hooks/useScrollTab/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useSwiperMore"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/hooks/useSwiperMore/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "poiLayout"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/utils/poiLayout.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "StaticInfo"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "SwitchView"
+      file: "src/pages/hoteldetail/detail/components/SwitchView/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RecommendList"
+      file: "src/pages/hoteldetail/detail/components/ThirdScreen/RecommendList/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ThirdScreen"
+      file: "src/pages/hoteldetail/detail/components/ThirdScreen/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "TraceLogId"
+      file: "src/pages/hoteldetail/detail/components/TraceLogId/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "UnFilterAlertDialogManager"
+      file: "src/pages/hoteldetail/detail/components/UnFilterAlertDialog/UnFilterAlertDialogManager.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useFilterBarModuleLogic.crn"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/FilterBarModule/Hooks/useFilterBarModuleLogic.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useFilterBarModuleLogic"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/FilterBarModule/Hooks/useFilterBarModuleLogic.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "savaPriceType"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/FilterBarModule/util/savaPriceType/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "layoutCalculator"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Hooks/layoutCalculator.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useHotelInfoModuleLogic"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Hooks/useHotelInfoModuleLogic.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useIsPrimeHotel.crn"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/HotelInfoModule/Hooks/useIsPrimeHotel.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "CombineRoom"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/CombineRoom/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HourRoomList"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/HourRoomList/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PhysicalRoomStateManager"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/PhysicalRoomStateManager.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PhysicalRoomCard"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RoomLoading"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/RoomLoading/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useCachedSaleRoomInfo"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Hooks/useCachedSaleRoomInfo.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useOpenRoomFloat.crn"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Hooks/useOpenRoomFloat.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useRoomListModuleLogic"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Hooks/useRoomListModuleLogic.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RoomListModule"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "FilterSuggestionBanner"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListTopBannerModule/Components/FilterSuggestionBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "LuxuryBanner"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListTopBannerModule/Components/LuxuryBanner/index.tsx"
+      role: "unknown"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: false
+      visual_match: false
+      name_match: true
+      reason: "组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PointDeductBanner"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListTopBannerModule/Components/PointDeductBanner/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useRoomListTopBannerModuleLogic"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListTopBannerModule/Hooks/useRoomListTopBannerModuleLogic.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useScrollAtTop"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListTopBannerModule/Hooks/useScrollAtTop.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "RoomListTopBannerModule"
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListTopBannerModule/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: true
+      reason: "代码包含风险 API，组件名匹配风险模式。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "NoticeBar"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/FacilityModule/Components/NoticeBar/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "HomeStayListModule"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/HomeStayListModule/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "PriceInfo"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Components/HotelProduct/PriceInfo/index.tsx"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useInStoreModuleLogic"
+      file: "src/pages/hoteldetail/detail/modules/SecondScreen/InStoreModule/Hooks/useInStoreModuleLogic.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "ab"
+      file: "src/pages/hoteldetail/detail/utils/ab/ab.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "goToSellingPoint"
+      file: "src/pages/hoteldetail/detail/utils/action/goToSellingPoint/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "foundation"
+      file: "src/pages/hoteldetail/detail/utils/foundation/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useMeasureLayout"
+      file: "src/pages/hoteldetail/detail/utils/hooks/useMeasureLayout/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "usePageScroll"
+      file: "src/pages/hoteldetail/detail/utils/hooks/usePageScroll/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useScrollTo"
+      file: "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "util"
+      file: "src/pages/hoteldetail/detail/utils/layerHistory/util/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "platform"
+      file: "src/pages/hoteldetail/detail/utils/platform/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "preloadSellingPoint"
+      file: "src/pages/hoteldetail/detail/utils/preloadSellingPoint/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "request"
+      file: "src/pages/hoteldetail/detail/utils/request/index.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "customLoggerBase.mini"
+      file: "src/pages/hoteldetail/detail/utils/trace/customLoggerBase.mini.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useDrawSharePicture"
+      file: "src/pages/hoteldetail/services/drawSharePicture/useDrawSharePicture.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "getCalendarPriceRequestParam"
+      file: "src/pages/hoteldetail/services/getCalendarPrice/getCalendarPriceRequestParam.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useCalendarPrice"
+      file: "src/pages/hoteldetail/services/getCalendarPrice/useCalendarPrice.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useDetailAdditionalInfoData"
+      file: "src/pages/hoteldetail/services/getDetailAdditionalInfo/useDetailAdditionalInfoData.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useDetailAggregateData"
+      file: "src/pages/hoteldetail/services/getHotelDetailAggregate/useDetailAggregateData.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useHotelRoomListData"
+      file: "src/pages/hoteldetail/services/getHotelRoomList/useHotelRoomListData.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "handleSplitRoomListUtil.crn"
+      file: "src/pages/hoteldetail/services/getHotelRoomList/utils/handleSplitRoomListUtil.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useGetMapDeeplink.h5"
+      file: "src/pages/hoteldetail/services/getMapDeeplink/useGetMapDeeplink.h5.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useGetMapDeeplink"
+      file: "src/pages/hoteldetail/services/getMapDeeplink/useGetMapDeeplink.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useMultipleSameRoomInfoData.crn"
+      file: "src/pages/hoteldetail/services/getMultipleSameRoomsInfo/useMultipleSameRoomInfoData.crn.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useOrderRoomInfoData"
+      file: "src/pages/hoteldetail/services/getOrderRoomInfo/useOrderRoomInfoData.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useShoppingCartInfoData"
+      file: "src/pages/hoteldetail/services/getShoppingCartInfo/useShoppingCartInfoData.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useRoomRemind"
+      file: "src/pages/hoteldetail/services/setRoomRemind/useRoomRemind.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+    - name: "useLowPriceSubscribe"
+      file: "src/pages/hoteldetail/services/subscribe/useLowPriceSubscribe.ts"
+      role: "likely_source"
+      confidence: "low"
+      evidence:
+      route_match: false
+      text_match: false
+      import_relation: false
+      style_signal: false
+      code_signal: true
+      visual_match: false
+      name_match: false
+      reason: "代码包含风险 API。"
+      missing_evidence:
+      - "route_match"
+      - "text_match"
+      - "import_relation"
+      - "style_signal"
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "ready_for_review"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
+    - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Album/Swiper/index.mini.tsx"
+    - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/hooks/useImmersiveHeadActions/index.ts"
+    - "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/atoms/index.ts"
+  suspected_components:
+    - "AlbumTab (onClickTabItem)"
+    - "Swiper (swiperIndex local state)"
+    - "useImmersiveHeadActions (onClickTab state 更新)"
+  evidence:
+    - type: "code_signal"
+      description: "tab 点击 → onClickTabItem → onClickTab → 更新 3 个 atom + 等待 500ms 后 setTransitionEnabled，Skyline 下可能有竞态"
+      file: "src/pages/hoteldetail/detail/components/StaticInfo/ImmersiveHead/Tab/index.tsx"
+  analysis: "{}"
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+fix:
+  approach: "|"
+  changed_files: []
+verification:
+  checklist:
+    - "点击 tab 后 swiper 立即切换到对应分类"
+    - "视频可正常播放（回归验证）"
+    - "iOS / Android 真机验证"
+  result: "pending"
+  devices:
+    - "iPhone 16 Pro"
+  notes: "iPhone 16 Pro 特定问题，需真机调试确认调用链是否正常"
+resolution:
+  root_cause: ""
+  fix_summary: []
+  changed_files: []
+  reusable_rule: ""
+case_output:
+  should_write_to_kb: false
+  target_file: ""
+  key_finding: ""
+uncertainty:
+  why_might_be_wrong:
+    - "可能是 iPhone 16 Pro 特定硬件/系统版本问题而非 Skyline 通用问题"
+    - "tab 切换可能实际触发了但视觉上无反馈，误判为无响应"
+  missing_evidence:
+    - "onClickTabItem 是否被调用（需 vconsole 日志）"
+    - "其他机型是否复现"
