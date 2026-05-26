@@ -1,0 +1,140 @@
+id: "skyline-issue-007"
+status: "closed"
+title: "物理房型吸顶失效，卡片整个悬空"
+inputs:
+  raw_description: "物理房型吸顶失效，卡片整个悬空"
+  page_hint: "pages/hoteldetail/detail"
+  mode: "enrich"
+  device: ""
+  attachments:
+    screenshots:
+      - "截屏2026-05-26 15.24.23.png"
+    videos: []
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: ""
+  page_name: "pages/hoteldetail/detail"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "物理房型（PhysicalRoomCard）的吸顶效果在 Skyline 下完全失效，卡片在滚动时处于正常文档流而非吸顶状态，导致房型卡片悬空"
+  before_behavior: "WebView 下物理房型卡片在滚动到 sticky 位置时会吸附在顶部，后续卡片会推动前一个卡片"
+  after_behavior: "Skyline 下物理房型卡片无吸顶效果，随滚动离开视口"
+  reproduce_steps:
+    - "打开酒店详情页（Skyline 渲染）"
+    - "向下滚动页面直到物理房型区域"
+    - "观察物理房型卡片是否吸顶"
+visual_context:
+  source: "screenshot"
+  affected_area: "PhysicalRoomCard 区域 + IncapableHeader 区域"
+  visible_text: []
+  visual_component_types:
+    - "PhysicalRoomCard"
+    - "IncapableHeader"
+  observed_symptoms:
+    - "物理房型卡片不吸顶，随滚动离开视口"
+    - "卡片在滚动经过时位置无变化，表现如同普通 view"
+  inferred_risk_types:
+    - "sticky"
+  confidence: "medium"
+risk:
+  types:
+    - "sticky"
+  level: "medium"
+  suspected_keywords:
+    - "吸顶"
+    - "sticky"
+    - "position:sticky"
+knowledge:
+  queries:
+    - "Skyline position:sticky not supported"
+    - "Skyline sticky-section sticky-header"
+  matched_docs: []
+  matched_rules: []
+  inferred_rules:
+    - "Skyline 不支持 CSS position: sticky，需使用 sticky-section / sticky-header 组件替代"
+component_retrieval:
+  search_queries:
+    - "position: sticky in RoomListModule"
+    - "sticky in PhysicalRoomCard style"
+  candidate_components:
+    - "PhysicalRoomCard (src/.../RoomListModule/Components/PhysicalRoomCard)"
+    - "IncapableHeader (src/.../RoomListModule/Components/IncapableHeader)"
+  rejected_components: []
+  confirmed_component: "PhysicalRoomCard"
+  reviewed: true
+  status: "ready_for_fix"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/style.ts"
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/IncapableHeader/style.ts"
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/IncapableHeader/index.tsx"
+  suspected_components:
+    - "PhysicalRoomCard"
+    - "IncapableHeader"
+  evidence:
+    - type: style_signal
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/style.ts"
+      line: 64
+      content: "baseRoomCardContainer: { position: 'sticky', zIndex: 4 }"
+      description: "PhysicalRoomCard 的容器样式使用了 Skyline 不支持的 position: sticky"
+    - type: style_signal
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/IncapableHeader/style.ts"
+      line: 6
+      content: "unRoomHeaderLine: { position: 'sticky', zIndex: 5 }"
+      description: "IncapableHeader（不满足筛选标题）使用了 Skyline 不支持的 position: sticky"
+    - type: style_signal
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/IncapableHeader/style.ts"
+      line: 18
+      content: "unRoomHeader: { position: 'sticky', top: 0 }"
+      description: "IncapableHeader 内部 header 也使用了 position: sticky"
+    - type: code_signal
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+      line: 235
+      content: "<ScrollTarget style={{ ...style.baseRoomCardContainer, ... }}>"
+      description: "PhysicalRoomCard 通过 ScrollTarget 渲染，寄希望于 CSS position:sticky 实现吸顶效果"
+    - type: code_signal
+      file: "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/IncapableHeader/index.tsx"
+      line: 46
+      content: "style={{ ...style.unRoomHeaderLine, ... }}"
+      description: "IncapableHeader 同样依赖 position:sticky 实现吸顶"
+  analysis:
+    confidence: "high"
+    likely_root_cause: "疑似因 Skyline 不支持 CSS position: sticky，导致 PhysicalRoomCard 和 IncapableHeader 的吸顶效果完全失效。两者均通过 style 设置了 position: 'sticky'，但 Skyline 渲染引擎忽略该属性，卡片退回正常文档流。"
+claude_code:
+  task_prompt: ""
+  prompt_file: ""
+verification:
+  checklist:
+    - "WebView 下物理房型吸顶正常（回归验证）"
+    - "Skyline 下物理房型吸顶正常"
+    - "IncapableHeader 吸顶正常"
+    - "iOS 真机验证"
+    - "Android 真机验证"
+  result: "passed"
+  devices: []
+  notes: "开发工具模拟器验证通过。PhysicalRoomCard 和 IncapableHeader 在 Skyline type='list' scroll-view 中使用 transform:translateY 替代 position:sticky，视觉吸顶正常，存在微抖动通过 transition:transform 0.02s 消除。"
+resolution:
+  root_cause: "Skyline 不支持 CSS position: sticky。PhysicalRoomCard 的容器样式 baseRoomCardContainer 和 IncapableHeader 的 unRoomHeaderLine / unRoomHeader 均使用了 position: 'sticky'，在 Skyline 下被忽略，导致吸顶完全失效。"
+  fix_summary:
+    - "PhysicalRoomCard/index.tsx: 当 roomState.stickyState === StickyState.Sticky 时，对 ScrollTarget 容器应用 transform:translateY(${scrollY - stickyStart}px)，利用 transform 不会改变布局框位置的特性，让虚拟化 scroll-view 的 virtualizer 仍能识别元素在正常流中，同时视觉上保持在视口顶部"
+    - "IncapableHeader/index.tsx: 通过 totalHeightAboveRoomListAtomFamily 读取吸顶触发点（与 isStickyStatus atom 同源计算），当吸顶时应用 transform:translateY(${scrollY - triggerPoint}px)，实现与 PhysicalRoomCard 相同的效果"
+    - "PhysicalRoomCard + IncapableHeader: 添加 transition:transform 0.02s linear，平滑因 JS 桥接延迟导致的帧间跳变"
+    - "position:sticky 在 WebView 端保持不动，不产生影响"
+  changed_files:
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/PhysicalRoomCard/index.tsx"
+    - "src/pages/hoteldetail/detail/modules/FirstScreen/RoomListModule/Components/IncapableHeader/index.tsx"
+  reusable_rule: "Skyline 下吸顶效果不能使用 CSS position: sticky。若元素位于 type='list' 虚拟化 scroll-view 中，需使用 JS 驱动的 transform: translateY() 替代：保持元素在 normal flow 中供 virtualizer 识别，通过 translateY 做视觉偏移。同时添加 transition: transform 0.02s 消除 JS 桥接延迟导致的帧间抖动。若元素不在虚拟化列表中，可考虑 position: fixed。"
+case_output:
+  should_write_to_kb: true
+  target_file: "knowledge/rules/skyline-sticky-alternative.md"
+uncertainty:
+  why_might_be_wrong:
+    - "transform:translateY 依赖于 scrollYAtom 的更新频率，如果 scrollYAtom 更新不够频繁或 React 渲染跟不上，仍可能有轻微抖动"
+    - "transition:0.02s 可能在某些低端设备上导致视觉滞后感"
+  missing_evidence:
+    - "未在真机 iOS/Android 上验证"

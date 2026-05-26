@@ -49,14 +49,15 @@
 | 批次 | 内容 | 风险 | 工作量 | WebView 影响 | 进度 |
 |---|---|---|---|---|---|
 | **1 — CSS 不兼容属性 + scroll-view type** | | | | | |
-| 1a | 5 处 position:sticky → sticky-header/sticky-section | 中 | 中 | ⚠️ 有影响（DOM/布局调整） | 🔧 B 类 3 处已改（未验证），A 类未动 |
+| 1a | 8 处 position:sticky → transform:translateY + transition（#007 PhysicalRoomCard + IncapableHeader） | 中 | 中 | ⚠️ 有影响（布局调整） | ✅ #007 已修复（transform:translateY + transition:0.02s 替代 position:fixed） |
 | 1b | 5 处 overflow:scroll/auto → scroll-view | 中 | 中 | ⚠️ 有影响（布局结构调整） | ❌ Issue #003 open，首次修复失败 |
 | 1c | 1 处 float → position:absolute 布局 | 低 | 小 | ⚠️ 有影响（布局改变） | ✅ 验证通过 |
 | 1d | ~10 处 scroll-view 加 type 属性 | 低 | 小 | ✅ 无影响 | ⏭️ 暂缓（无需 type 亦可工作） |
 | **2 — 页面滚动体系迁移** | | | | | |
-| 2a | window.scrollY → scroll-view onScroll | 高 | 中 | ⚠️ 有影响（架构级改动） | 未开始 |
-| 2b | window.scrollTo() → ScrollViewContext | 中 | 小 | ⚠️ 有影响 | 未开始 |
-| 2c | window.addEventListener('scroll') 移除 | 高 | 小 | ⚠️ 有影响 | 未开始 |
+| 2a | onScroll 使用 e.detail.scrollTop 替代 getBoundingClientRect | 高 | 中 | ⚠️ 有影响 | ✅ 已修复 |
+| 2b | scroll-view 添加 type="list" | 低 | 小 | ✅ 无影响 | ✅ 已修复 |
+| 2c | 模块测量改用 createSelectorQuery（xDOMUtils 在 Skyline 要求 node 有 id/class） | 中 | 小 | ⚠️ 有影响（测量逻辑改动） | ✅ 已验证 |
+| 2d | 清理 usePageScroll/mini 死代码 | 低 | 小 | ✅ 无影响 | ✅ 已修复 |
 | **3 — 文本样式** | | | | | |
 | 3a | white-space:pre/pre-wrap → 数据层处理或 text 组件 | 中 | 小 | ⚠️ 有影响 | 未开始 |
 | 3b | overflow-wrap:break-word → word-break:break-all | 低 | 小 | ✅ 无影响（行为接近） | 未开始 |
@@ -74,8 +75,8 @@
 
 | Issue | 优先级 | 阻塞内容 | 状态 |
 |-------|--------|----------|------|
-| #005 | P0 | 筛选浮层不可见 | z-index fix 无效，疑似 FilterProvider 状态未更新，待排查 |
 | #001 | P1 | absolute shrink-to-fit 不支持 | 需 JS 动态计算宽度 |
+| #005 | P0 | 筛选浮层不可见 | z-index fix 无效，疑似 FilterProvider 状态未更新，待排查 |
 | #003 | P2 | overflow:scroll 滚动条 | 证据不足，需 more search |
 
 ---
