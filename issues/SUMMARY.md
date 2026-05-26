@@ -16,6 +16,7 @@
 | 004 | 订房优惠领券点击无法唤起浮层 | `wx.createAnimation` | 禁用 PopLayer 内置动画 + CSS @keyframes 替代 |
 | 006 | 货架价格浮层高度异常且缺少蒙层 | `wx.createAnimation`（PriceLayer 未传 isSkyline） | PriceLayerContainer 补传 `isSkyline` prop |
 | 007 | 物理房型吸顶失效 | `position: sticky` 不支持 | PhysicalRoomCard/IncapableHeader 改用 transform:translateY + transition:0.02s |
+| 008 | 页面 tab 锚定偏移 + 滚动范围异常 | Skyline type="list" scroll-top 定位不准 + 无 cache-extent | useScrollTo 改用 ScrollViewContext.scrollTo() + XScrollView 加 cacheExtent={2000} |
 
 ---
 
@@ -30,6 +31,8 @@
 | flex column + `alignItems:'start'` | 子元素不继承容器宽度，文字不换行 | 子元素加 `alignSelf: 'stretch'` | #002 (closed) |
 | z-index 兄弟节点作用域 | 嵌套在无 z-index 容器中的 absolute 元素无法穿透层层级 | 在外层容器设置 position:relative + z-index | #005 |
 | `wx.getSystemInfoSync` | deprecated 警告 | `wx.getWindowInfo()` | #004 |
+| `scroll-top` prop in type="list" | 程序化滚动定位不准，偏移量计算与实际渲染不符 | `ScrollViewContext.scrollTo()` | #008 |
+| type="list" 无 cache-extent | 只渲染可见节点，总内容高度估算偏小导致滚动范围异常 | 使用 `cache-extent` 预渲染 off-screen 内容 | #008 |
 
 ---
 

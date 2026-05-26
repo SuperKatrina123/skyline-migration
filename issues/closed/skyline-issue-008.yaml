@@ -1,0 +1,174 @@
+id: "skyline-issue-008"
+status: "closed"
+title: "页面 tab 锚定位置偏移 + scroll-view 滚动范围异常"
+inputs:
+  raw_description: |
+    Skyline 下两个相关问题：
+    1. 点击页面 Tab（评论/亮点/设施等），页面滚动但停在错误位置，未正确锚定在吸顶导航栏下方
+    2. 手指轻轻一划，页面立即滚到底部
+  page_hint: "酒店详情页"
+  mode: "skyline"
+  device: "iOS"
+  attachments:
+    screenshots:
+      - "issues/assets/skyline-issue-008-tab-anchor.png"
+      - "issues/assets/skyline-issue-008-scroll-range.png"
+    videos:
+      - "issues/assets/skyline-issue-008-tab-anchor-wrong-pos.mov"
+      - "issues/assets/skyline-issue-008-scroll-to-bottom.mov"
+    logs: []
+context:
+  project: "XTaro miniapp Skyline migration"
+  page_route: "pages/hoteldetail/detail"
+  page_name: "酒店详情页"
+  platform: "weapp"
+  renderer_before: "webview"
+  renderer_after: "skyline"
+  ab_experiment: "HTL_Skyline_Migration"
+symptom:
+  summary: "Skyline type=\"list\" 虚拟列表下，scroll-top prop 程序化滚动定位不准；同时因虚拟列表初始未预渲染 off-screen 内容，内容高度估算过小导致极短滚动即达底部"
+  before_behavior: "WebView 下 Tab 点击精确锚定到指定模块上方吸顶导航栏处；手指正常滚动范围覆盖全页面内容"
+  after_behavior: |
+    Skyline 下：
+    1. Tab 点击后页面滚动但目的地偏移（吸顶导航栏下方未对齐目标模块顶部）
+    2. 手指轻划页面即滚动到底部，无法正常浏览中间内容
+  reproduce_steps:
+    - "开启 Skyline 渲染"
+    - "进入酒店详情页"
+    - "点击任意页面 Tab（如评论/亮点/设施）"
+    - "观察：页面滚动但目标模块未与吸顶栏对齐，有偏移"
+    - "手指在页面上轻划"
+    - "观察：页面立即滚动到底部"
+visual_context:
+  source: "screenshot"
+  affected_area: "XScrollView 滚动容器（PageContent 内 type=\"list\" scroll-view）"
+  root_cause_confidence: "none"
+risk:
+  types:
+    - "scroll"
+  level: "high"
+  suspected_keywords:
+    - "scroll-top"
+    - "type=list"
+    - "virtual list"
+    - "ScrollViewContext"
+    - "cache-extent"
+knowledge:
+  queries:
+    - "Skyline scroll-view type list scrollTop inaccuracy"
+    - "Skyline cache-extent virtual list scroll range"
+  matched_docs:
+    - "node_modules/@ctrip/xtaro/platform/mini/component/XScrollView"
+  matched_rules:
+    - doc: "skyline-components/references/scroll/scroll-view.md"
+      rule: "Skyline type=\"list\" 模式默认不设 cache-extent 时只渲染在屏节点，总内容高度估算偏小导致滚动范围异常"
+    - doc: "skyline-scroll-api/SKILL.md"
+      rule: "Skyline 下程序化滚动推荐使用 ScrollViewContext.scrollTo() 而非 scroll-top prop"
+component_retrieval:
+  search_queries:
+    - "XScrollView"
+    - "PageContent"
+    - "useScrollTo"
+    - "ScrollViewContext"
+  candidate_components:
+    - name: "PageContent (index.mini.tsx)"
+      file: "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+      role: "affected_area"
+      confidence: "high"
+      evidence:
+        route_match: true
+        text_match: true
+        import_relation: false
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "XScrollView 容器，缺少 cacheExtent 且使用 scrollTop prop 而非 ScrollViewContext.scrollTo() 进行程序化滚动"
+      missing_evidence: []
+    - name: "useScrollTo (index.mini.ts)"
+      file: "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.mini.ts"
+      role: "likely_source"
+      confidence: "high"
+      evidence:
+        route_match: true
+        text_match: true
+        import_relation: true
+        style_signal: false
+        code_signal: true
+        visual_match: false
+        name_match: true
+      reason: "Tab 点击触发 scrollToModule，通过 xDOMUtils.getBoundingClientRect + scrollTop prop 实现滚动，在 Skyline type=list 下定位不准"
+      missing_evidence: []
+  rejected_components: []
+  confirmed_component: ""
+  reviewed: false
+  status: "pending"
+code_context:
+  suspected_files:
+    - "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+    - "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.mini.ts"
+  evidence:
+    - type: "code"
+      level: 3
+      detail: "PageContent/index.mini.tsx: XScrollView missing cacheExtent prop"
+    - type: "code"
+      level: 4
+      detail: "useScrollTo/index.mini.ts: scrollToModule uses setScrollTop(scrollTopAtom) via scrollTop prop — not reliable in Skyline type=list"
+    - type: "code"
+      level: 4
+      detail: "useScrollTo/index.mini.ts: offset calc = stickyHeaderHeight, may differ from Skyline layout"
+    - type: "fix_applied"
+      level: 1
+      detail: "已修复: PageContent 加 cacheExtent={2000} + id='detail-scroll-view'; useScrollTo 改用 ScrollViewContext.scrollTo()"
+analysis:
+  likely_root_cause: |
+    疑似 Skyline type="list" 虚拟列表的坐标体系与 WebView 不同：
+    1. scroll-top prop 在虚拟列表中的定位精度不如 ScrollViewContext.scrollTo()
+    2. 无 cache-extent 时 off-screen item 未渲染，总内容高度估算过小导致滚动范围异常
+    3. stickyHeaderHeight 的模块高度实测值与 Skyline 渲染值可能存在差异
+  confidence: "medium"
+  fix_direction_hypothesis: |
+    PageContent/index.mini.tsx:
+    - 给 XScrollView 添加 cacheExtent={2000}，预渲染 off-screen 内容以正确估算总高度
+    - 添加 id="detail-scroll-view" 用于 ScrollViewContext 获取
+
+    useScrollTo/index.mini.ts:
+    - 通过 wx.createSelectorQuery().select('#detail-scroll-view').node() 获取 ScrollViewContext
+    - 改用 ScrollViewContext.scrollTo({ top, duration, animated }) 代替 scrollTop prop
+    - 保留 setScrollTop fallback 用于 ScrollViewContext 未就绪场景
+
+    实测验证 ScrollViewContext.scrollTo() 的定位精度和 cacheExtent 对滚动范围的影响。
+  inferred_rules:
+    - "Skyline type=\"list\" 下程序化滚动应使用 ScrollViewContext.scrollTo() 而非 scroll-top prop"
+    - "Skyline type=\"list\" 应设置 cache-extent 以确保内容高度估算准确"
+  impact_scope: |
+    影响酒店详情页所有 Tab 锚定交互和页面滚动体验，属于核心交互路径。
+verification:
+  checklist:
+    - "Skyline 下点击 Tab 精准锚定到目标模块上方吸顶导航栏处"
+    - "Skyline 下手指正常滚动，范围覆盖全页面内容"
+    - "WebView 下 tab 锚定和滚动行为不变"
+    - "iOS / Android 双端验证"
+    - "AB 回退验证"
+    - "非微信端回归（H5/CRN 不受影响）"
+  result: "pending"
+  devices:
+    - "iOS（真机待验证）"
+    - "Android（真机待验证）"
+  notes: "代码已修复待真机验证。cacheExtent 和 ScrollViewContext.scrollTo() 需在 Skyline 真机确认定位精度和滚动范围正常。如有偏差可能需要调整 cacheExtent 值或优化 scrollTo duration。"
+resolution:
+  root_cause: |
+    Skyline type="list" 虚拟列表下：
+    1. scroll-top prop 程序化滚动定位精度不足，配合 boundingClientRect.top + scrollY 的偏移量计算在虚拟列表坐标体系中产生偏差
+    2. 无 cache-extent 时 off-screen item 未渲染到 DOM，总内容高度估算过小导致极短滚动即达底部
+  fix_summary:
+    - "PageContent/index.mini.tsx: XScrollView 添加 cacheExtent={2000} 预渲染 off-screen 内容以修正高度估算；添加 id='detail-scroll-view' 供 ScrollViewContext 获取"
+    - "useScrollTo/index.mini.ts: 改用 ScrollViewContext.scrollTo({ top, duration, animated }) 代替 scrollTop prop 进行程序化滚动；保留 setScrollTop 降级方案"
+  changed_files:
+    - "src/pages/hoteldetail/detail/components/PageContent/index.mini.tsx"
+    - "src/pages/hoteldetail/detail/utils/hooks/useScrollTo/index.mini.ts"
+  reusable_rule: |
+    Skyline type="list" 下：(1) 程序化滚动必须使用 ScrollViewContext.scrollTo() 而非 scroll-top prop；(2) 必须设置 cache-extent 确保内容高度估算准确；(3) scroll-view 需加 id 属性以便 NodesRef.node() 获取 ScrollViewContext。
+case_output:
+  should_write_to_kb: true
+  target_file: "kb/skyline-scroll-programmatic.md"
