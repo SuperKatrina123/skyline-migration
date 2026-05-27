@@ -230,11 +230,127 @@ function checkStyleContent(relativePath, lines) {
   return issues;
 }
 
+function countChar(line, char) {
+  return (line.match(new RegExp(`\\${char}`, 'g')) || []).length;
+}
+
+function findLineInBlock(blockLines, pattern, blockStartLine) {
+  const index = blockLines.findIndex(line => pattern.test(line));
+  return index === -1 ? blockStartLine : blockStartLine + index;
+}
+
+function hasStyleValue(block, prop, value) {
+  const patterns = [
+    new RegExp(`${prop}\\s*:\\s*['"\`]${value}['"\`]`),
+    new RegExp(`${prop.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}\\s*:\\s*['"\`]${value}['"\`]`),
+  ];
+  return patterns.some(pattern => pattern.test(block));
+}
+
+/**
+ * 检查 TS/TSX style object 中的文本兼容性。
+ *
+ * 这类问题通常不会表现为语法错误：WebView 下能换行/打点，Skyline 下因为
+ * text 组件、flex cross-axis 或 unsupported value 差异而溢出。
+ */
+function checkStyleObjectBlocks(relativePath, lines) {
+  const issues = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const startLine = lines[i];
+    if (!/^\s*[\w$-]+\s*:\s*{/.test(startLine)) continue;
+
+    const blockLines = [];
+    let depth = 0;
+    let started = false;
+
+    for (let j = i; j < lines.length; j++) {
+      const line = lines[j];
+      blockLines.push(line);
+      depth += countChar(line, '{');
+      depth -= countChar(line, '}');
+      if (line.includes('{')) started = true;
+      if (started && depth <= 0) {
+        const block = blockLines.join('\n');
+        const blockStartLine = i + 1;
+
+        if (/wordBreak\s*:\s*['"`]break-word['"`]/.test(block)) {
+          issues.push({
+            file: relativePath,
+            line: findLineInBlock(blockLines, /wordBreak\s*:\s*['"`]break-word['"`]/, blockStartLine),
+            severity: 'ERROR',
+            msg: "Skyline 不支持 wordBreak:'break-word'，会映射为 normal；需要改用 break-all 或显式设置文本宽度/alignSelf",
+            code: blockLines.find(line => /wordBreak\s*:\s*['"`]break-word['"`]/.test(line))?.trim(),
+          });
+        }
+
+        if (/overflowWrap\s*:/.test(block)) {
+          issues.push({
+            file: relativePath,
+            line: findLineInBlock(blockLines, /overflowWrap\s*:/, blockStartLine),
+            severity: 'ERROR',
+            msg: 'Skyline 不支持 overflowWrap，改用 wordBreak:break-all 并回归断词效果',
+            code: blockLines.find(line => /overflowWrap\s*:/.test(line))?.trim(),
+          });
+        }
+
+        if (/whiteSpace\s*:\s*['"`]pre(?:-wrap|-line)?['"`]/.test(block)) {
+          issues.push({
+            file: relativePath,
+            line: findLineInBlock(blockLines, /whiteSpace\s*:\s*['"`]pre(?:-wrap|-line)?['"`]/, blockStartLine),
+            severity: 'ERROR',
+            msg: 'Skyline 仅支持 whiteSpace:normal/nowrap；pre/pre-wrap/pre-line 需要数据层处理换行',
+            code: blockLines.find(line => /whiteSpace\s*:\s*['"`]pre(?:-wrap|-line)?['"`]/.test(line))?.trim(),
+          });
+        }
+
+        if (/textOverflow\s*:\s*['"`]ellipsis['"`]/.test(block)) {
+          const hasOverflowHidden = hasStyleValue(block, 'overflow', 'hidden');
+          const hasWhiteSpaceNowrap = hasStyleValue(block, 'whiteSpace', 'nowrap');
+
+          if (!hasOverflowHidden || !hasWhiteSpaceNowrap) {
+            const missing = [
+              !hasOverflowHidden ? 'overflow:hidden' : '',
+              !hasWhiteSpaceNowrap ? 'whiteSpace:nowrap' : '',
+            ].filter(Boolean).join(' + ');
+
+            issues.push({
+              file: relativePath,
+              line: findLineInBlock(blockLines, /textOverflow\s*:\s*['"`]ellipsis['"`]/, blockStartLine),
+              severity: 'WARN',
+              msg: `textOverflow:ellipsis 需要与 overflow:hidden + whiteSpace:nowrap 同元素设置，当前缺少 ${missing}`,
+              code: blockLines.find(line => /textOverflow\s*:\s*['"`]ellipsis['"`]/.test(line))?.trim(),
+            });
+          }
+        }
+
+        if (
+          /flexDirection\s*:\s*['"`]column['"`]/.test(block) &&
+          /alignItems\s*:\s*['"`](start|flex-start)['"`]/.test(block)
+        ) {
+          issues.push({
+            file: relativePath,
+            line: findLineInBlock(blockLines, /alignItems\s*:\s*['"`](start|flex-start)['"`]/, blockStartLine),
+            severity: 'WARN',
+            msg: "flex column + alignItems:flex-start 下，子文本可能不继承容器宽度；需要给换行文本加 alignSelf:'stretch' 或明确宽度",
+            code: blockLines.find(line => /alignItems\s*:\s*['"`](start|flex-start)['"`]/.test(line))?.trim(),
+          });
+        }
+
+        i = j;
+        break;
+      }
+    }
+  }
+
+  return issues;
+}
+
 /**
  * 检查 tsx/ts 文件中的组件和样式
  */
 function checkTSXContent(relativePath, lines) {
-  const issues = [];
+  const issues = checkStyleObjectBlocks(relativePath, lines);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
